@@ -1,101 +1,174 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useRef, useCallback } from 'react';
+import { VideoUpload } from '@/components/VideoUpload';
+import { VideoPlayer } from '@/components/VideoPlayer';
+import { CaptionEditor } from '@/components/CaptionEditor';
+import { ExportPanel } from '@/components/ExportPanel';
+import { extractAudio } from '@/lib/ffmpeg';
+import { transcribeAudio } from '@/lib/transcription';
+import type { CaptionSegment, AppState, ProgressInfo } from '@/lib/types';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [segments, setSegments] = useState<CaptionSegment[]>([]);
+  const [state, setState] = useState<AppState>('idle');
+  const [progress, setProgress] = useState<ProgressInfo>({ stage: '', value: 0 });
+  const [currentTime, setCurrentTime] = useState(0);
+  const cancelRef = useRef<(() => void) | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleUpload = useCallback(
+    (file: File) => {
+      cancelRef.current?.();
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      setVideoFile(file);
+      setVideoUrl(URL.createObjectURL(file));
+      setSegments([]);
+      setState('idle');
+      setProgress({ stage: '', value: 0 });
+    },
+    [videoUrl]
+  );
+
+  const handleGenerate = useCallback(async () => {
+    if (!videoFile || state === 'extracting' || state === 'transcribing') return;
+
+    try {
+      // Step 1: extract audio via FFmpeg.wasm
+      setState('extracting');
+      const audioData = await extractAudio(videoFile, (stage, value) =>
+        setProgress({ stage, value })
+      );
+
+      // Step 2: transcribe via Whisper running in a Web Worker
+      setState('transcribing');
+      setProgress({ stage: 'Starting transcription...', value: 0 });
+
+      cancelRef.current = transcribeAudio(audioData, {
+        onStatus: (stage) => setProgress((p) => ({ ...p, stage })),
+        onProgress: (stage, value) => setProgress({ stage, value }),
+        onComplete: (newSegments) => {
+          setSegments(newSegments);
+          setState(newSegments.length > 0 ? 'done' : 'error');
+          setProgress(
+            newSegments.length > 0
+              ? { stage: '', value: 0 }
+              : { stage: 'No speech detected. Try a video with clearer audio or spoken words.', value: 0 }
+          );
+        },
+        onError: (message) => {
+          setState('error');
+          setProgress({ stage: `Error: ${message}`, value: 0 });
+        },
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong';
+      setState('error');
+      setProgress({ stage: `Error: ${msg}`, value: 0 });
+    }
+  }, [videoFile, state]);
+
+  const isProcessing = state === 'extracting' || state === 'transcribing';
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      {/* Header */}
+      <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-3 flex-shrink-0">
+        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm select-none">
+          C
         </div>
+        <h1 className="text-lg font-bold">CaptionAI</h1>
+        <span className="text-xs text-gray-500 hidden sm:inline">
+          Powered by Whisper &middot; 100% free &middot; runs entirely in your browser
+        </span>
+      </header>
+
+      {/* Main content */}
+      <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
+        {!videoUrl ? (
+          <VideoUpload onUpload={handleUpload} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left: video + controls (2/3 width) */}
+            <div className="lg:col-span-2 flex flex-col gap-4">
+              <VideoPlayer
+                videoUrl={videoUrl}
+                segments={segments}
+                onTimeUpdate={setCurrentTime}
+              />
+
+              {/* Progress bar */}
+              {isProcessing && (
+                <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-300 truncate">{progress.stage}</span>
+                    <span className="text-gray-400 ml-2 flex-shrink-0">{progress.value}%</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-1.5">
+                    <div
+                      className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${progress.value}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Buttons */}
+              {!isProcessing && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleGenerate}
+                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    {segments.length > 0 ? '↺ Regenerate Captions' : '✨ Generate Captions'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'video/*';
+                      input.onchange = (e) => {
+                        const f = (e.target as HTMLInputElement).files?.[0];
+                        if (f) handleUpload(f);
+                      };
+                      input.click();
+                    }}
+                    className="py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm transition-colors"
+                  >
+                    Change video
+                  </button>
+                </div>
+              )}
+
+              {/* Error */}
+              {state === 'error' && (
+                <p className="text-red-400 text-sm text-center">{progress.stage}</p>
+              )}
+
+              {/* Export */}
+              {segments.length > 0 && !isProcessing && videoFile && (
+                <ExportPanel segments={segments} videoFile={videoFile} />
+              )}
+            </div>
+
+            {/* Right: caption editor (1/3 width) */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-gray-200">Captions</h2>
+                {segments.length > 0 && (
+                  <span className="text-xs text-gray-500">{segments.length} segments</span>
+                )}
+              </div>
+              <CaptionEditor
+                segments={segments}
+                currentTime={currentTime}
+                onUpdate={setSegments}
+              />
+            </div>
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
