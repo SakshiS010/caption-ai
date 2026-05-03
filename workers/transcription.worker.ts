@@ -12,11 +12,11 @@ self.onmessage = async (event: MessageEvent) => {
 
   try {
     if (!transcriber) {
-      self.postMessage({ type: 'status', stage: 'Downloading AI model (~40 MB, once only)...' });
+      self.postMessage({ type: 'status', stage: 'Downloading AI model (~80 MB, once only)...' });
 
       transcriber = await pipeline(
         'automatic-speech-recognition',
-        'Xenova/whisper-tiny',
+        'Xenova/whisper-base',
         {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           progress_callback: (data: any) => {

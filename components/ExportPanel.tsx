@@ -4,13 +4,15 @@ import { useState } from 'react';
 import type { CaptionSegment } from '@/lib/types';
 import { toSRT, toWebVTT, downloadFile } from '@/lib/captionUtils';
 import { burnCaptions } from '@/lib/ffmpeg';
+import type { CaptionStyle } from '@/lib/captionStyle';
 
 interface Props {
   segments: CaptionSegment[];
   videoFile: File;
+  style: CaptionStyle;
 }
 
-export function ExportPanel({ segments, videoFile }: Props) {
+export function ExportPanel({ segments, videoFile, style }: Props) {
   const [burning, setBurning] = useState(false);
   const [burnStage, setBurnStage] = useState('');
   const [burnValue, setBurnValue] = useState(0);
@@ -21,14 +23,21 @@ export function ExportPanel({ segments, videoFile }: Props) {
     setBurnValue(0);
 
     try {
-      const srt = toSRT(segments);
-      const data = await burnCaptions(videoFile, srt, (stage, value) => {
-        setBurnStage(stage);
-        setBurnValue(value);
-      });
+      const data = await burnCaptions(
+        videoFile,
+        segments,
+        (stage, value) => {
+          setBurnStage(stage);
+          setBurnValue(value);
+        },
+        style
+      );
 
       // Trigger download of the finished MP4
-      const blob = new Blob([data.buffer.slice(0) as ArrayBuffer], { type: 'video/mp4' });
+      const blob = new Blob(
+        [(data.buffer as ArrayBuffer).slice(data.byteOffset, data.byteOffset + data.byteLength)],
+        { type: 'video/mp4' }
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -38,6 +47,7 @@ export function ExportPanel({ segments, videoFile }: Props) {
       URL.revokeObjectURL(url);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Burn failed';
+      console.error('[ExportPanel] burn error:', msg);
       setBurnStage(`Error: ${msg}`);
     } finally {
       setBurning(false);
@@ -66,8 +76,12 @@ export function ExportPanel({ segments, videoFile }: Props) {
       {burning ? (
         <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-300 truncate">{burnStage}</span>
-            <span className="text-gray-400 ml-2 flex-shrink-0">{burnValue}%</span>
+            <span className={`text-sm break-words whitespace-pre-wrap ${burnStage.startsWith('Error:') ? 'text-red-400' : 'text-gray-300'}`}>
+              {burnStage}
+            </span>
+            {!burnStage.startsWith('Error:') && (
+              <span className="text-gray-400 ml-2 flex-shrink-0">{burnValue}%</span>
+            )}
           </div>
           <div className="w-full bg-gray-800 rounded-full h-1.5">
             <div

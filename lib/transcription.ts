@@ -1,4 +1,5 @@
 import type { CaptionSegment } from './types';
+import { normalizeForCompare, deOverlapSegments } from './captionUtils';
 
 interface RawChunk {
   text: string;
@@ -9,6 +10,28 @@ interface GroupedChunk {
   text: string;
   start: number;
   end: number;
+}
+
+// Whisper-tiny/base sometimes locks onto a phrase and emits it dozens of times
+// in a row on unclear audio. Drop chunks whose normalized text matches the
+// previous chunk's after N consecutive repeats — keeps natural emphasis
+// ("yes yes!") but kills "I think it is just a feeling" loops.
+function dropRepeats(chunks: RawChunk[], maxConsecutive = 2): RawChunk[] {
+  const out: RawChunk[] = [];
+  let lastNorm = '';
+  let runLength = 0;
+  for (const chunk of chunks) {
+    const norm = normalizeForCompare(chunk.text);
+    if (norm && norm === lastNorm) {
+      runLength++;
+      if (runLength >= maxConsecutive) continue;
+    } else {
+      runLength = 1;
+      lastNorm = norm;
+    }
+    out.push(chunk);
+  }
+  return out;
 }
 
 // Whisper returns word-level chunks. Group them into ~5-second caption lines
@@ -68,19 +91,23 @@ export function transcribeAudio(
       console.log('[transcription.ts] processing result:', result);
 
       if (Array.isArray(result.chunks) && result.chunks.length > 0) {
-        // Group word-level chunks into ~5-second sentence groups for readable captions
+        // Strip Whisper's hallucination loops, then group into ~5-second caption lines.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const grouped = groupChunks(result.chunks);
+        const cleaned = dropRepeats(result.chunks);
+        const grouped = groupChunks(cleaned);
+        const raw: CaptionSegment[] = [];
         grouped.forEach((chunk: GroupedChunk, i: number) => {
           const text = chunk.text.trim();
           if (!text) return;
-          segments.push({
+          raw.push({
             id: `seg-${i}`,
             start: chunk.start,
             end: chunk.end,
             text,
           });
         });
+        // Resolve overlapping time ranges so libass never shows two captions at once.
+        deOverlapSegments(raw).forEach((s, i) => segments.push({ ...s, id: `seg-${i}` }));
       }
 
       // Fallback: Whisper returned only a flat text string with no chunk timestamps

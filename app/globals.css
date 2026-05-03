@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Caption fonts — same TTFs that get written into FFmpeg's VFS at burn time,
+   so the live preview renders with the exact font that will be burned. */
+@font-face { font-family: 'Arial';           src: url('/fonts/Arial.ttf')           format('truetype'); font-display: swap; }
+@font-face { font-family: 'Verdana';         src: url('/fonts/Verdana.ttf')         format('truetype'); font-display: swap; }
+@font-face { font-family: 'Tahoma';          src: url('/fonts/Tahoma.ttf')          format('truetype'); font-display: swap; }
+@font-face { font-family: 'Trebuchet MS';    src: url('/fonts/Trebuchet.ttf')       format('truetype'); font-display: swap; }
+@font-face { font-family: 'Times New Roman'; src: url('/fonts/TimesNewRoman.ttf')   format('truetype'); font-display: swap; }
+@font-face { font-family: 'Georgia';         src: url('/fonts/Georgia.ttf')         format('truetype'); font-display: swap; }
+@font-face { font-family: 'Impact';          src: url('/fonts/Impact.ttf')          format('truetype'); font-display: swap; }
+@font-face { font-family: 'Comic Sans MS';   src: url('/fonts/ComicSansMS.ttf')     format('truetype'); font-display: swap; }
+
 body {
   background: #030712;
   color: #f9fafb;

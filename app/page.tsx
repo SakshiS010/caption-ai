@@ -5,8 +5,10 @@ import { VideoUpload } from '@/components/VideoUpload';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { CaptionEditor } from '@/components/CaptionEditor';
 import { ExportPanel } from '@/components/ExportPanel';
+import { StylePanel } from '@/components/StylePanel';
 import { extractAudio } from '@/lib/ffmpeg';
 import { transcribeAudio } from '@/lib/transcription';
+import { type CaptionStyle, DEFAULT_STYLE } from '@/lib/captionStyle';
 import type { CaptionSegment, AppState, ProgressInfo } from '@/lib/types';
 
 export default function Home() {
@@ -16,6 +18,7 @@ export default function Home() {
   const [state, setState] = useState<AppState>('idle');
   const [progress, setProgress] = useState<ProgressInfo>({ stage: '', value: 0 });
   const [currentTime, setCurrentTime] = useState(0);
+  const [captionStyle, setCaptionStyle] = useState<CaptionStyle>(DEFAULT_STYLE);
   const cancelRef = useRef<(() => void) | null>(null);
 
   const handleUpload = useCallback(
@@ -95,8 +98,14 @@ export default function Home() {
               <VideoPlayer
                 videoUrl={videoUrl}
                 segments={segments}
+                style={captionStyle}
                 onTimeUpdate={setCurrentTime}
               />
+
+              {/* Caption styling controls */}
+              {segments.length > 0 && (
+                <StylePanel style={captionStyle} onChange={setCaptionStyle} />
+              )}
 
               {/* Progress bar */}
               {isProcessing && (
@@ -148,7 +157,7 @@ export default function Home() {
 
               {/* Export */}
               {segments.length > 0 && !isProcessing && videoFile && (
-                <ExportPanel segments={segments} videoFile={videoFile} />
+                <ExportPanel segments={segments} videoFile={videoFile} style={captionStyle} />
               )}
             </div>
 
