@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { VideoUpload } from '@/components/VideoUpload';
+import { LandingPage } from '@/components/LandingPage';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { CaptionEditor } from '@/components/CaptionEditor';
 import { ExportPanel } from '@/components/ExportPanel';
@@ -74,13 +74,21 @@ export default function Home() {
 
   const isProcessing = state === 'extracting' || state === 'transcribing';
 
+  if (!videoUrl) {
+    return <LandingPage onUpload={handleUpload} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
-      {/* Header */}
+      {/* Header — only shown inside the editor */}
       <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-3 flex-shrink-0">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm select-none">
+        <button
+          onClick={() => { cancelRef.current?.(); if (videoUrl) URL.revokeObjectURL(videoUrl); setVideoUrl(null); setVideoFile(null); setSegments([]); setState('idle'); }}
+          className="w-8 h-8 bg-blue-600 hover:bg-blue-500 rounded-lg flex items-center justify-center font-bold text-sm select-none transition-colors"
+          title="Back to home"
+        >
           C
-        </div>
+        </button>
         <h1 className="text-lg font-bold">CaptionAI</h1>
         <span className="text-xs text-gray-500 hidden sm:inline">
           Powered by Whisper &middot; 100% free &middot; runs entirely in your browser
@@ -89,10 +97,7 @@ export default function Home() {
 
       {/* Main content */}
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
-        {!videoUrl ? (
-          <VideoUpload onUpload={handleUpload} />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: video + controls (2/3 width) */}
             <div className="lg:col-span-2 flex flex-col gap-4">
               <VideoPlayer
@@ -100,6 +105,9 @@ export default function Home() {
                 segments={segments}
                 style={captionStyle}
                 onTimeUpdate={setCurrentTime}
+                onEditCaption={(id, text) =>
+                  setSegments((prev) => prev.map((s) => (s.id === id ? { ...s, text } : s)))
+                }
               />
 
               {/* Caption styling controls */}
@@ -176,7 +184,6 @@ export default function Home() {
               />
             </div>
           </div>
-        )}
       </main>
     </div>
   );

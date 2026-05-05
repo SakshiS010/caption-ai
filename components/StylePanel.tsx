@@ -6,8 +6,10 @@ import {
   type Alignment,
   type Position,
   type LetterCase,
+  type AnimationStyle,
   FONTS,
   COLOR_PRESETS,
+  ANIMATIONS,
 } from '@/lib/captionStyle';
 
 interface Props {
@@ -188,6 +190,90 @@ export function StylePanel({ style, onChange }: Props) {
                 className="w-full accent-blue-500"
               />
             </Field>
+          </div>
+
+          {/* Animation */}
+          <div className="flex flex-col gap-2 pt-1 border-t border-gray-800">
+            <span className="text-xs text-gray-400">Animation</span>
+            <div className="grid grid-cols-5 gap-1.5">
+              {ANIMATIONS.map((anim) => (
+                <button
+                  key={anim.value}
+                  type="button"
+                  onClick={() => set('animation', anim.value as AnimationStyle)}
+                  className={`px-1 py-2 rounded text-center flex flex-col gap-0.5 transition-colors ${
+                    style.animation === anim.value
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  <span className="text-xs font-medium">{anim.label}</span>
+                  <span className="text-[9px] opacity-70 leading-tight">{anim.description}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Highlight colour — shown for word-pop and karaoke */}
+            {(style.animation === 'karaoke' || style.animation === 'word-pop') && (
+              <Field label="Highlight colour">
+                <ColorRow
+                  value={style.highlightColor}
+                  onChange={(v) => set('highlightColor', v)}
+                />
+              </Field>
+            )}
+          </div>
+
+          {/* Quick presets */}
+          <div className="flex flex-col gap-2 pt-1 border-t border-gray-800">
+            <span className="text-xs text-gray-400">Quick presets</span>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...style,
+                    animation: 'impact',
+                    bold: true,
+                    letterCase: 'uppercase',
+                    fontSize: 18,
+                    textColor: '#FFFFFF',
+                    outlineColor: '#000000',
+                    outlineWidth: 2.5,
+                    hasBackground: false,
+                    alignment: 'center',
+                    position: 'middle',
+                    fontFamily: 'Montserrat',
+                  })
+                }
+                className="px-3 py-1.5 bg-orange-700 hover:bg-orange-600 rounded text-xs font-semibold transition-colors"
+              >
+                ⚡ Impact (robthebank)
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...style,
+                    animation: 'karaoke',
+                    bold: false,
+                    letterCase: 'normal',
+                    fontSize: 12,
+                    textColor: '#FFFFFF',
+                    highlightColor: '#FFEB3B',
+                    outlineColor: '#000000',
+                    outlineWidth: 1.5,
+                    hasBackground: false,
+                    alignment: 'center',
+                    position: 'bottom',
+                    fontFamily: 'Roboto',
+                  })
+                }
+                className="px-3 py-1.5 bg-yellow-700 hover:bg-yellow-600 rounded text-xs font-semibold transition-colors"
+              >
+                🎤 Karaoke
+              </button>
+            </div>
           </div>
         </div>
       )}

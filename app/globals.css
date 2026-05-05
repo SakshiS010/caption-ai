@@ -4,19 +4,114 @@
 
 /* Caption fonts — same TTFs that get written into FFmpeg's VFS at burn time,
    so the live preview renders with the exact font that will be burned. */
-@font-face { font-family: 'Arial';           src: url('/fonts/Arial.ttf')           format('truetype'); font-display: swap; }
-@font-face { font-family: 'Verdana';         src: url('/fonts/Verdana.ttf')         format('truetype'); font-display: swap; }
-@font-face { font-family: 'Tahoma';          src: url('/fonts/Tahoma.ttf')          format('truetype'); font-display: swap; }
-@font-face { font-family: 'Trebuchet MS';    src: url('/fonts/Trebuchet.ttf')       format('truetype'); font-display: swap; }
-@font-face { font-family: 'Times New Roman'; src: url('/fonts/TimesNewRoman.ttf')   format('truetype'); font-display: swap; }
-@font-face { font-family: 'Georgia';         src: url('/fonts/Georgia.ttf')         format('truetype'); font-display: swap; }
-@font-face { font-family: 'Impact';          src: url('/fonts/Impact.ttf')          format('truetype'); font-display: swap; }
-@font-face { font-family: 'Comic Sans MS';   src: url('/fonts/ComicSansMS.ttf')     format('truetype'); font-display: swap; }
+/* Sans-serif */
+@font-face { font-family: 'Roboto';           src: url('/fonts/Roboto-Regular.ttf')           format('truetype'); font-display: swap; }
+@font-face { font-family: 'Open Sans';        src: url('/fonts/OpenSans-Regular.ttf')         format('truetype'); font-display: swap; }
+@font-face { font-family: 'Lato';             src: url('/fonts/Lato-Regular.ttf')             format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins';          src: url('/fonts/Poppins-Regular.ttf')          format('truetype'); font-display: swap; }
+@font-face { font-family: 'Montserrat';       src: url('/fonts/Montserrat-Regular.ttf')       format('truetype'); font-display: swap; }
+@font-face { font-family: 'Inter';            src: url('/fonts/Inter-Regular.ttf')            format('truetype'); font-display: swap; }
+@font-face { font-family: 'Nunito';           src: url('/fonts/Nunito-Regular.ttf')           format('truetype'); font-display: swap; }
+@font-face { font-family: 'Raleway';          src: url('/fonts/Raleway-Regular.ttf')          format('truetype'); font-display: swap; }
+@font-face { font-family: 'Archivo';          src: url('/fonts/Archivo-Regular.ttf')          format('truetype'); font-display: swap; }
+@font-face { font-family: 'Source Sans 3';    src: url('/fonts/SourceSans3-Regular.ttf')      format('truetype'); font-display: swap; }
+/* Condensed / Display */
+@font-face { font-family: 'Oswald';           src: url('/fonts/Oswald-Regular.ttf')           format('truetype'); font-display: swap; }
+@font-face { font-family: 'Bebas Neue';       src: url('/fonts/BebasNeue-Regular.ttf')        format('truetype'); font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('/fonts/BarlowCondensed-Regular.ttf')  format('truetype'); font-display: swap; }
+/* Serif */
+@font-face { font-family: 'Playfair Display'; src: url('/fonts/PlayfairDisplay-Regular.ttf')  format('truetype'); font-display: swap; }
+@font-face { font-family: 'Merriweather';     src: url('/fonts/Merriweather-Regular.ttf')     format('truetype'); font-display: swap; }
+/* Handwriting */
+@font-face { font-family: 'Dancing Script';   src: url('/fonts/DancingScript-Regular.ttf')    format('truetype'); font-display: swap; }
+@font-face { font-family: 'Pacifico';         src: url('/fonts/Pacifico-Regular.ttf')         format('truetype'); font-display: swap; }
+@font-face { font-family: 'Caveat';           src: url('/fonts/Caveat-Regular.ttf')           format('truetype'); font-display: swap; }
 
 body {
   background: #030712;
   color: #f9fafb;
 }
+
+/* Caption animation keyframes */
+@keyframes caption-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes caption-pop {
+  0%   { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@keyframes caption-impact {
+  0%   { transform: scale(2); }
+  60%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.caption-anim-fade {
+  animation: caption-fade-in 0.3s ease-out both;
+}
+
+.caption-anim-pop {
+  animation: caption-pop 0.15s cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+
+.caption-anim-impact {
+  animation: caption-impact 0.2s cubic-bezier(0.2, 0, 0.2, 1.5) both;
+}
+
+/* Inline caption edit textarea — strip browser default textarea appearance */
+.caption-inline-edit {
+  font-family: inherit;
+}
+
+/* ── Landing page animations ─────────────────────────────────── */
+@keyframes float-slow   { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-22px)} }
+@keyframes float-medium { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-14px)} }
+@keyframes float-fast   { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-8px)}  }
+@keyframes hero-word-in { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes shimmer-move { 0%{background-position:-200% center} 100%{background-position:200% center} }
+@keyframes border-spin  { to{--angle:360deg} }
+@keyframes pulse-glow   { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.35)} 50%{box-shadow:0 0 28px 6px rgba(99,102,241,.15)} }
+@keyframes upload-bounce{ 0%,100%{transform:translateY(0)} 60%{transform:translateY(-6px)} }
+@keyframes grid-fade-in { from{opacity:0} to{opacity:.35} }
+@keyframes step-pop     { from{opacity:0;transform:scale(.88) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+.animate-float-slow   { animation: float-slow   6s ease-in-out infinite; }
+.animate-float-medium { animation: float-medium 4.5s ease-in-out infinite; }
+.animate-float-fast   { animation: float-fast   3.5s ease-in-out infinite 1s; }
+
+.shimmer-text {
+  background: linear-gradient(90deg, #fff 0%, #60a5fa 25%, #a78bfa 55%, #34d399 75%, #fff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-move 5s linear infinite;
+}
+
+.hero-word {
+  display: inline-block;
+  opacity: 0;
+  animation: hero-word-in .55s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+/* Scroll-reveal: add data-reveal attr, JS adds .revealed when in viewport */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity .65s ease, transform .65s ease;
+}
+[data-reveal].revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.upload-icon-anim { animation: upload-bounce 2s ease-in-out infinite; }
+
+.feature-card:hover { transform: translateY(-4px); }
+.feature-card { transition: transform .25s ease, box-shadow .25s ease; }
 
 /* Thin dark scrollbar for the caption editor */
 ::-webkit-scrollbar {
