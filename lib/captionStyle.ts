@@ -48,9 +48,8 @@ export const COLOR_PRESETS: { label: string; hex: string }[] = [
 ];
 
 export type Alignment = 'left' | 'center' | 'right';
-export type Position = 'top' | 'middle' | 'bottom';
 export type LetterCase = 'normal' | 'uppercase' | 'lowercase';
-export type AnimationStyle = 'none' | 'fade' | 'word-pop' | 'karaoke' | 'impact';
+export type AnimationStyle = 'none' | 'fade' | 'word-pop' | 'karaoke' | 'impact' | 'emphasis';
 
 export interface AnimationOption {
   value: AnimationStyle;
@@ -64,6 +63,7 @@ export const ANIMATIONS: AnimationOption[] = [
   { value: 'word-pop', label: 'Word Pop',  description: 'Words pop in one by one' },
   { value: 'karaoke',  label: 'Karaoke',   description: 'Highlight each word' },
   { value: 'impact',   label: 'Impact',    description: 'Words slam in' },
+  { value: 'emphasis', label: 'Emphasis',  description: 'Active word pops & glows' },
 ];
 
 export interface CaptionStyle {
@@ -79,8 +79,8 @@ export interface CaptionStyle {
   backgroundColor: string;
   backgroundOpacity: number;   // 0..1
   alignment: Alignment;
-  position: Position;
-  marginV: number;             // ASS units
+  positionX: number;           // 0–100 % from left; anchor = center of text block
+  positionY: number;           // 0–100 % from top
   letterCase: LetterCase;
   letterSpacing: number;       // pixels (libass Spacing)
   animation: AnimationStyle;
@@ -100,8 +100,8 @@ export const DEFAULT_STYLE: CaptionStyle = {
   backgroundColor: '#000000',
   backgroundOpacity: 0.6,
   alignment: 'center',
-  position: 'bottom',
-  marginV: 30,
+  positionX: 50,
+  positionY: 85,
   letterCase: 'normal',
   letterSpacing: 0,
   animation: 'none',
@@ -120,8 +120,9 @@ export function hexToASS(hex: string, alpha = 0): string {
 }
 
 // ASS Alignment uses numpad layout: 1-3 bottom, 4-6 middle, 7-9 top.
-function alignmentToASS(align: Alignment, pos: Position): number {
-  const row = pos === 'bottom' ? 0 : pos === 'middle' ? 3 : 6;
+// posY is 0–100 % from top (0 = top of frame, 100 = bottom).
+function alignmentToASS(align: Alignment, posY: number): number {
+  const row = posY < 37 ? 6 : posY < 63 ? 3 : 0;
   const col = align === 'left' ? 1 : align === 'center' ? 2 : 3;
   return row + col;
 }
@@ -147,10 +148,10 @@ export function buildForceStyle(style: CaptionStyle): string {
     `Outline=${style.outlineWidth}`,
     `Shadow=0`,
     `Spacing=${style.letterSpacing}`,
-    `Alignment=${alignmentToASS(style.alignment, style.position)}`,
-    `MarginV=${style.marginV}`,
-    `MarginL=20`,
-    `MarginR=20`,
+    `Alignment=${alignmentToASS(style.alignment, style.positionY)}`,
+    `MarginV=0`,
+    `MarginL=0`,
+    `MarginR=0`,
   ].join(',');
 }
 
@@ -201,29 +202,22 @@ export function buildPreviewCSS(style: CaptionStyle, videoHeight: number): CSSPr
   return css;
 }
 
-// Outer wrapper positioning for the preview overlay. Position values are in
-// pixels relative to the rendered video.
-export function buildOverlayCSS(style: CaptionStyle, videoHeight: number): CSSProperties {
-  const scale = videoHeight / 288;
-  const marginPx = style.marginV * scale;
-  const css: CSSProperties = {
+// Outer wrapper positioning for the preview overlay.
+// positionX/positionY are 0–100 % and define the CENTER anchor of the caption.
+export function buildOverlayCSS(style: CaptionStyle, _videoHeight: number): CSSProperties {
+  return {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    paddingLeft: `${20 * scale}px`,
-    paddingRight: `${20 * scale}px`,
+    left: `${style.positionX}%`,
+    top: `${style.positionY}%`,
+    transform: 'translate(-50%, -50%)',
+    maxWidth: '90%',
     pointerEvents: 'none',
     display: 'flex',
     justifyContent:
       style.alignment === 'left' ? 'flex-start' :
       style.alignment === 'right' ? 'flex-end' : 'center',
+    textAlign: style.alignment,
   };
-  if (style.position === 'top') css.top = `${marginPx}px`;
-  else if (style.position === 'middle') {
-    css.top = '50%';
-    css.transform = 'translateY(-50%)';
-  } else css.bottom = `${marginPx}px`;
-  return css;
 }
 
 // ─── ASS file generation for animated burn modes ──────────────────────────────
@@ -247,6 +241,11 @@ function escapeASS(text: string): string {
 // Used by burnCaptions when style.animation !== 'none'.
 export function buildASSFile(segments: CaptionSegment[], style: CaptionStyle): string {
   const bgAlpha = Math.round((1 - style.backgroundOpacity) * 255);
+  // posX/posY as ASS coordinates within PlayRes 384×288
+  const assX = Math.round((style.positionX / 100) * 384);
+  const assY = Math.round((style.positionY / 100) * 288);
+  const posTag = `\\pos(${assX},${assY})`;
+
   const styleRow = [
     'Default',
     style.fontFamily,
@@ -265,9 +264,9 @@ export function buildASSFile(segments: CaptionSegment[], style: CaptionStyle): s
     style.hasBackground ? 3 : 1,  // BorderStyle
     style.outlineWidth,
     0,           // Shadow
-    alignmentToASS(style.alignment, style.position),
-    20, 20,      // MarginL, MarginR
-    style.marginV,
+    alignmentToASS(style.alignment, style.positionY),
+    0, 0,        // MarginL, MarginR (overridden by \pos)
+    0,           // MarginV (overridden by \pos)
     1,           // Encoding
   ].join(',');
 
@@ -298,14 +297,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
 
     switch (style.animation) {
       case 'fade':
-        lines.push(dialogue(seg.start, seg.end, `{\\fad(200,200)}${rawText}`));
+        lines.push(dialogue(seg.start, seg.end, `{${posTag}\\fad(200,200)}${rawText}`));
         break;
 
       case 'word-pop':
         words.forEach((w, i) => {
           const t0 = seg.start + i * wordDur;
           const t1 = i < words.length - 1 ? t0 + wordDur : seg.end;
-          lines.push(dialogue(t0, t1, `{\\fscx130\\fscy130\\t(0,150,\\fscx100\\fscy100)}${w}`));
+          lines.push(dialogue(t0, t1, `{${posTag}\\fscx130\\fscy130\\t(0,150,\\fscx100\\fscy100)}${w}`));
         });
         break;
 
@@ -317,22 +316,36 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
           const parts = words.map((word, j) =>
             j === i ? `{\\1c${hlColor}}${word}{\\r}` : word
           );
-          lines.push(dialogue(t0, t1, parts.join(' ')));
+          lines.push(dialogue(t0, t1, `{${posTag}}` + parts.join(' ')));
         });
         break;
       }
 
       case 'impact':
-        // Slam: 200% → 95% overshoot → 100% (robthebank style)
         words.forEach((w, i) => {
           const t0 = seg.start + i * wordDur;
           const t1 = i < words.length - 1 ? t0 + wordDur : seg.end;
-          lines.push(dialogue(t0, t1, `{\\fscx200\\fscy200\\t(0,120,\\fscx95\\fscy95)\\t(120,200,\\fscx100\\fscy100)}${w}`));
+          lines.push(dialogue(t0, t1, `{${posTag}\\fscx200\\fscy200\\t(0,120,\\fscx95\\fscy95)\\t(120,200,\\fscx100\\fscy100)}${w}`));
         });
         break;
 
+      case 'emphasis': {
+        const hlColor = hexToASS(style.highlightColor);
+        words.forEach((w, i) => {
+          const t0 = seg.start + i * wordDur;
+          const t1 = i < words.length - 1 ? t0 + wordDur : seg.end;
+          const parts = words.map((word, j) =>
+            j === i
+              ? `{\\1c${hlColor}\\fscx120\\fscy120\\b1}${word}{\\r}`
+              : word
+          );
+          lines.push(dialogue(t0, t1, `{${posTag}}` + parts.join(' ')));
+        });
+        break;
+      }
+
       default:
-        lines.push(dialogue(seg.start, seg.end, rawText));
+        lines.push(dialogue(seg.start, seg.end, `{${posTag}}${rawText}`));
     }
   }
 

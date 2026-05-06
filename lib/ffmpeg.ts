@@ -101,7 +101,11 @@ export async function extractAudio(
   onProgress('Decoding audio...', 85);
 
   const audioCtx = new AudioContext({ sampleRate: 16000 });
-  const audioBuffer = await audioCtx.decodeAudioData(wavData.buffer.slice(0) as ArrayBuffer);
+  // Slice with explicit byte range — wavData may be a view into the WASM heap
+  // (non-zero byteOffset), so slice(0) would hand the entire heap to the decoder.
+  const audioBuffer = await audioCtx.decodeAudioData(
+    wavData.buffer.slice(wavData.byteOffset, wavData.byteOffset + wavData.byteLength) as ArrayBuffer
+  );
   await audioCtx.close();
 
   onProgress('Audio ready', 100);

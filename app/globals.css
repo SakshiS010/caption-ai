@@ -137,6 +137,19 @@ body {
   animation: caption-impact 0.2s cubic-bezier(0.2, 0, 0.2, 1.5) both;
 }
 
+/* Word-emphasis: active word springs up with overshoot */
+@keyframes caption-emphasis-pop {
+  0%   { transform: scale(1);    }
+  55%  { transform: scale(1.32); }
+  100% { transform: scale(1.22); }
+}
+.caption-word-active {
+  animation: caption-emphasis-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.caption-word-idle {
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+
 /* Inline caption edit textarea — strip browser default textarea appearance */
 .caption-inline-edit {
   font-family: inherit;

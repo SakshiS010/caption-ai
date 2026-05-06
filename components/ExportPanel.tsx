@@ -41,10 +41,14 @@ export function ExportPanel({ segments, videoFile, style }: Props) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
+      a.style.display = 'none';
       const baseName = videoFile.name.replace(/\.[^.]+$/, '');
       a.download = `${baseName}-captioned.mp4`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      // Delay revocation so the browser has time to start the download
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Burn failed';
       console.error('[ExportPanel] burn error:', msg);

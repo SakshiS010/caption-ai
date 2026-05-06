@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { OllyNav } from './OllyNav';
 import { VideoPlayer } from './VideoPlayer';
+import { Timeline } from './Timeline';
 import { StylePanel } from './StylePanel';
 import { CaptionEditor } from './CaptionEditor';
 import { ExportPanel } from './ExportPanel';
@@ -20,6 +21,7 @@ interface Props {
   progress: ProgressInfo;
   currentTime: number;
   onTimeUpdate: (t: number) => void;
+  onUpload: (file: File) => void;
   onGenerate: () => void;
   onFeedback: () => void;
   onHome: () => void;
@@ -36,9 +38,21 @@ const TABS: { id: Tab; label: string; emoji: string }[] = [
 export function EditorPage({
   videoUrl, videoFile, segments, setSegments,
   captionStyle, setCaptionStyle, appState, progress,
-  currentTime, onTimeUpdate, onGenerate, onFeedback, onHome,
+  currentTime, onTimeUpdate, onUpload, onGenerate, onFeedback, onHome,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('captions');
+  const [activeTab,          setActiveTab]          = useState<Tab>('captions');
+  const [videoDuration,      setVideoDuration]      = useState(0);
+  const [seekTime,           setSeekTime]           = useState<{ value: number; id: number } | undefined>();
+  const [selectedSegmentId,  setSelectedSegmentId]  = useState<string | undefined>();
+
+  const handleSeek = useCallback((time: number) => {
+    setSeekTime({ value: time, id: Date.now() });
+  }, []);
+
+  const handleSegmentSelect = useCallback((id: string) => {
+    setSelectedSegmentId(id);
+    setActiveTab('captions');
+  }, []);
 
   const isProcessing = appState === 'extracting' || appState === 'transcribing';
 
@@ -79,11 +93,27 @@ export function EditorPage({
                 segments={segments}
                 style={captionStyle}
                 onTimeUpdate={onTimeUpdate}
+                onDurationChange={setVideoDuration}
+                seekTime={seekTime}
                 onEditCaption={(id, text) =>
                   setSegments((prev) => prev.map((s) => (s.id === id ? { ...s, text } : s)))
                 }
+                onPositionChange={(x, y) =>
+                  setCaptionStyle((prev) => ({ ...prev, positionX: x, positionY: y }))
+                }
               />
             </div>
+
+            {/* Timeline */}
+            <Timeline
+              duration={videoDuration}
+              currentTime={currentTime}
+              segments={segments}
+              selectedId={selectedSegmentId}
+              onSeek={handleSeek}
+              onSegmentsChange={setSegments}
+              onSegmentSelect={handleSegmentSelect}
+            />
 
             {/* Generate / progress */}
             {isProcessing ? (
@@ -135,7 +165,7 @@ export function EditorPage({
                     inp.type = 'file'; inp.accept = 'video/*';
                     inp.onchange = (e) => {
                       const f = (e.target as HTMLInputElement).files?.[0];
-                      if (f) onHome();
+                      if (f) onUpload(f);
                     };
                     inp.click();
                   }}
@@ -198,6 +228,8 @@ export function EditorPage({
                     segments={segments}
                     currentTime={currentTime}
                     onUpdate={setSegments}
+                    selectedId={selectedSegmentId}
+                    onSelect={setSelectedSegmentId}
                   />
                 </div>
               )}

@@ -100,6 +100,7 @@ export default function Home() {
       progress={progress}
       currentTime={currentTime}
       onTimeUpdate={setCurrentTime}
+      onUpload={handleUpload}
       onGenerate={handleGenerate}
       onFeedback={() => setStep(3)}
       onHome={goHome}

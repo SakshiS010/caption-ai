@@ -24,10 +24,11 @@ const STEPS = [
 
 function UploadZone({ onUpload }: { onUpload: (f: File) => void }) {
   const onDrop = useCallback((accepted: File[]) => { if (accepted[0]) onUpload(accepted[0]); }, [onUpload]);
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: { 'video/*': ['.mp4', '.mov', '.avi', '.webm', '.mkv'] },
     maxFiles: 1,
+    noClick: true,  // we control clicks manually so the button works correctly
   });
 
   return (
@@ -68,7 +69,7 @@ function UploadZone({ onUpload }: { onUpload: (f: File) => void }) {
           type="button"
           className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-display font-semibold text-white text-lg transition-all duration-200 hover:-translate-y-1 active:scale-95"
           style={{ background: 'linear-gradient(135deg, #ec4899, #f472b6)', boxShadow: '0 6px 22px rgba(236,72,153,0.35)' }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={open}
         >
           ✨ Start Captioning — it&apos;s free!
         </button>
