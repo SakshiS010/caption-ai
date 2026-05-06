@@ -8,67 +8,18 @@ interface Props {
 }
 
 const FEATURES = [
-  {
-    icon: '🎙️',
-    title: 'Whisper AI Transcription',
-    desc: 'OpenAI Whisper runs directly in your browser via a Web Worker — no server, no API key, no cost.',
-    grad: 'from-blue-600/25 to-blue-950/10',
-    ring: 'ring-blue-700/40',
-    delay: 0,
-  },
-  {
-    icon: '✨',
-    title: '5 Animation Styles',
-    desc: 'Fade, Word Pop, Karaoke highlight, Impact bounce — or keep it static. All burned with pixel-accurate ASS subtitles.',
-    grad: 'from-violet-600/25 to-violet-950/10',
-    ring: 'ring-violet-700/40',
-    delay: 80,
-  },
-  {
-    icon: '✍️',
-    title: '18 Pro Fonts',
-    desc: 'Bebas Neue, Poppins, Pacifico and 15 more. The live preview uses the exact same TTF that gets burned into the video.',
-    grad: 'from-pink-600/25 to-pink-950/10',
-    ring: 'ring-pink-700/40',
-    delay: 160,
-  },
-  {
-    icon: '🖊️',
-    title: 'Click-to-Edit Captions',
-    desc: 'Click any caption directly on the video player to edit it inline — VEED-style. Changes reflect everywhere instantly.',
-    grad: 'from-cyan-600/25 to-cyan-950/10',
-    ring: 'ring-cyan-700/40',
-    delay: 0,
-  },
-  {
-    icon: '🔥',
-    title: 'Burn Into MP4',
-    desc: 'Export a finished MP4 with captions permanently baked in. H.264 + AAC, moov-at-front, plays on any device.',
-    grad: 'from-orange-600/25 to-orange-950/10',
-    ring: 'ring-orange-700/40',
-    delay: 80,
-  },
-  {
-    icon: '📄',
-    title: 'SRT & VTT Export',
-    desc: 'Download universal subtitle files for YouTube Studio, Premiere Pro, DaVinci Resolve, or any NLE.',
-    grad: 'from-emerald-600/25 to-emerald-950/10',
-    ring: 'ring-emerald-700/40',
-    delay: 160,
-  },
+  { icon: '🎙️', title: 'AI Voice Transcription', desc: 'Whisper AI runs right in your browser tab — no cloud, no servers, zero data collection.' },
+  { icon: '🎨', title: '18 Gorgeous Fonts', desc: 'Bebas Neue, Poppins, Pacifico and 15 more — previewed live and burned with pixel precision.' },
+  { icon: '✨', title: '5 Animation Styles', desc: 'Fade, Word Pop, Karaoke, Impact bounce, or static. Captions that move like your content.' },
+  { icon: '🔥', title: 'Burn to MP4', desc: 'Download a finished video with captions permanently embedded. Plays on any device.' },
+  { icon: '📄', title: 'SRT & VTT Export', desc: 'Universal subtitle files for YouTube, Premiere Pro, DaVinci Resolve and more.' },
+  { icon: '🛡️', title: '100% Private', desc: 'Your video never leaves your device. Nothing uploaded. Ever. No account needed.' },
 ];
 
 const STEPS = [
-  { n: '01', icon: '📤', title: 'Upload Your Video', desc: 'Drag & drop or browse for any MP4, MOV, WebM, MKV or AVI. Nothing leaves your device.' },
-  { n: '02', icon: '🤖', title: 'AI Generates Captions', desc: 'Whisper-base runs in a background thread and streams captions segment by segment as it transcribes.' },
-  { n: '03', icon: '🚀', title: 'Edit, Style & Export', desc: 'Tweak text inline, choose a font & animation, then burn into MP4 or grab an SRT/VTT file.' },
-];
-
-const BADGES = [
-  { icon: '💰', label: '100% Free' },
-  { icon: '🔓', label: 'No Login' },
-  { icon: '🛡️', label: 'Runs in Browser' },
-  { icon: '📶', label: 'Private & Offline' },
+  { n: '01', icon: '📤', title: 'Drop Your Video', desc: 'Any MP4, MOV, MKV or WebM — Olly handles it.' },
+  { n: '02', icon: '🤖', title: 'Olly Listens', desc: 'AI transcription streams captions as it goes — watch the magic happen.' },
+  { n: '03', icon: '🌸', title: 'Style & Export', desc: 'Fonts, colours, animations — then burn to MP4 or grab an SRT file.' },
 ];
 
 function UploadZone({ onUpload }: { onUpload: (f: File) => void }) {
@@ -80,263 +31,284 @@ function UploadZone({ onUpload }: { onUpload: (f: File) => void }) {
   });
 
   return (
-    <div
-      {...getRootProps()}
-      className={`relative w-full max-w-2xl mx-auto rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ring-2 ${
-        isDragActive
-          ? 'ring-blue-400 bg-blue-500/15 scale-[1.02]'
-          : 'ring-gray-700 hover:ring-blue-600/60 bg-gray-900/60 hover:bg-gray-900/90'
-      }`}
-      style={{ backdropFilter: 'blur(12px)' }}
-    >
+    <div {...getRootProps()} className="cursor-pointer select-none">
       <input {...getInputProps()} />
-
-      {/* Subtle animated corner glow when drag active */}
-      {isDragActive && (
-        <div className="absolute inset-0 rounded-2xl pointer-events-none"
-          style={{ boxShadow: '0 0 40px 6px rgba(59,130,246,.3)' }} />
-      )}
-
-      <div className="upload-icon-anim text-5xl mb-4 select-none">
-        {isDragActive ? '🎯' : '🎬'}
-      </div>
-      <p className="text-xl font-bold text-white mb-1">
-        {isDragActive ? 'Drop to caption it!' : 'Drop your video here'}
-      </p>
-      <p className="text-gray-400 text-sm mb-5">or click to browse &middot; MP4, MOV, AVI, WebM, MKV</p>
-
-      <button
-        type="button"
-        className="inline-flex items-center gap-2 px-7 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold text-sm transition-colors"
-        onClick={(e) => { e.stopPropagation(); }}
+      <div
+        className="relative rounded-3xl p-10 text-center transition-all duration-300"
+        style={{
+          border: `3px dashed ${isDragActive ? '#40916c' : '#95d5b2'}`,
+          background: isDragActive
+            ? 'rgba(208,243,220,0.35)'
+            : 'linear-gradient(145deg, rgba(255,251,240,0.95), rgba(240,250,244,0.85))',
+          transform: isDragActive ? 'scale(1.025)' : 'scale(1)',
+          boxShadow: isDragActive ? '0 0 0 6px rgba(64,145,108,0.15)' : '0 2px 24px rgba(45,106,79,0.08)',
+        }}
       >
-        <span>✨</span> Get Started Free
-      </button>
+        {/* Corner accents */}
+        <div className="absolute top-3 left-3 w-5 h-5 border-l-2 border-t-2 rounded-tl-xl" style={{ borderColor: '#52b788' }} />
+        <div className="absolute top-3 right-3 w-5 h-5 border-r-2 border-t-2 rounded-tr-xl" style={{ borderColor: '#52b788' }} />
+        <div className="absolute bottom-3 left-3 w-5 h-5 border-l-2 border-b-2 rounded-bl-xl" style={{ borderColor: '#52b788' }} />
+        <div className="absolute bottom-3 right-3 w-5 h-5 border-r-2 border-b-2 rounded-br-xl" style={{ borderColor: '#52b788' }} />
 
-      <p className="text-gray-600 text-xs mt-4">No account required &middot; 100% private</p>
+        <div
+          className="text-7xl mb-4 inline-block transition-transform duration-300"
+          style={{ transform: isDragActive ? 'scale(1.3) rotate(10deg)' : 'scale(1)' }}
+        >
+          {isDragActive ? '🎯' : '🥑'}
+        </div>
+
+        <h3 className="font-display text-2xl font-semibold mb-2" style={{ color: '#1b4332' }}>
+          {isDragActive ? 'Yes! Drop it!' : 'Drop your video here'}
+        </h3>
+        <p className="text-sm mb-6" style={{ color: '#52b788' }}>
+          or click to browse &middot; MP4, MOV, AVI, WebM, MKV
+        </p>
+
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-display font-semibold text-white text-lg transition-all duration-200 hover:-translate-y-1 active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #ec4899, #f472b6)', boxShadow: '0 6px 22px rgba(236,72,153,0.35)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          ✨ Start Captioning — it&apos;s free!
+        </button>
+
+        <p className="text-xs mt-4" style={{ color: '#95d5b2' }}>
+          Nothing uploaded to any server &middot; 100% private &middot; no account needed
+        </p>
+      </div>
     </div>
   );
 }
 
 export function LandingPage({ onUpload }: Props) {
-  // Scroll-reveal
   useEffect(() => {
     const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
     const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('revealed'); io.unobserve(e.target); } }),
-      { threshold: 0.12 }
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add('revealed'); io.unobserve(e.target); }
+      }),
+      { threshold: 0.1 }
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--cream)', color: '#1c1917' }}>
 
-      {/* ── NAV ─────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 py-4"
-        style={{ background: 'rgba(3,7,18,0.75)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm select-none">C</div>
-          <span className="font-bold text-lg">CaptionAI</span>
-          <span className="hidden sm:inline text-xs text-gray-500 font-medium px-2 py-0.5 bg-gray-800 rounded-full ml-1">beta</span>
+      {/* ── NAV ─────────────────────────────────────────────────── */}
+      <nav
+        className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 py-4"
+        style={{ background: 'rgba(255,251,240,0.88)', backdropFilter: 'blur(16px)', borderBottom: '1.5px solid #d8f3dc' }}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl">🥑</span>
+          <span className="font-display text-xl font-bold" style={{ color: '#1b4332' }}>Olly-AI</span>
+          <span className="hidden sm:inline px-2.5 py-0.5 rounded-full font-display text-[10px] font-bold uppercase tracking-wide"
+            style={{ background: '#d8f3dc', color: '#1b4332' }}>avocado AI</span>
         </div>
-        <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#how" className="hover:text-white transition-colors">How it works</a>
+        <div className="hidden md:flex items-center gap-6 font-display text-sm font-semibold" style={{ color: '#40916c' }}>
+          <a href="#features" className="hover:text-[#1b4332] transition-colors">Features</a>
+          <a href="#how" className="hover:text-[#1b4332] transition-colors">How it works</a>
         </div>
         <button
-          onClick={() => document.getElementById('upload-anchor')?.scrollIntoView({ behavior: 'smooth' })}
-          className="text-sm px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition-colors"
+          onClick={() => document.getElementById('upload-zone')?.scrollIntoView({ behavior: 'smooth' })}
+          className="px-5 py-2 rounded-full font-display font-semibold text-white text-sm transition-all hover:-translate-y-0.5 active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #40916c, #52b788)', boxShadow: '0 4px 14px rgba(64,145,108,.32)' }}
         >
-          Try Free
+          Try Olly Free ✨
         </button>
       </nav>
 
-      {/* ── HERO ────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-6 text-center overflow-hidden">
+      {/* ── HERO ───────────────────────────────────────────────────── */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-28 pb-16 px-6 text-center overflow-hidden">
 
-        {/* Floating gradient orbs */}
+        {/* Ambient blobs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="animate-float-slow absolute top-24 left-1/4 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl" />
-          <div className="animate-float-medium absolute top-48 right-1/4 w-96 h-96 bg-violet-600/15 rounded-full blur-3xl" />
-          <div className="animate-float-fast absolute bottom-32 left-1/2 -translate-x-1/2 w-64 h-64 bg-cyan-600/10 rounded-full blur-3xl" />
-        </div>
-
-        {/* Dot grid overlay */}
-        <div className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-            maskImage: 'radial-gradient(ellipse 80% 60% at center, black 30%, transparent 100%)',
+          <div className="absolute -top-28 -right-28 w-[550px] h-[550px]" style={{
+            background: 'radial-gradient(circle, #f9a8d4 0%, #ec4899 60%, transparent 100%)',
+            opacity: 0.18, filter: 'blur(52px)', borderRadius: '60% 40% 30% 70%/60% 30% 70% 40%',
           }} />
-
-        {/* Badge */}
-        <div className="relative mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold text-blue-300 ring-1 ring-blue-700/50 bg-blue-950/40"
-          style={{ backdropFilter: 'blur(8px)' }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-          Powered by OpenAI Whisper · Runs 100% in your browser
+          <div className="absolute -bottom-28 -left-28 w-[500px] h-[500px]" style={{
+            background: 'radial-gradient(circle, #95d5b2 0%, #2d6a4f 60%, transparent 100%)',
+            opacity: 0.2, filter: 'blur(52px)', borderRadius: '40% 60% 70% 30%/40% 50% 60% 50%',
+          }} />
+          {/* Floating pips */}
+          {([
+            { style: { top: '22%', left: '7%', width: 12, height: 12, background: '#f472b6', opacity: 0.5, animationDuration: '4s', borderRadius: '50%' } },
+            { style: { top: '40%', right: '7%', width: 8, height: 8, background: '#52b788', opacity: 0.5, animationDuration: '5s', animationDelay: '1s', borderRadius: '50%' } },
+            { style: { bottom: '28%', left: '14%', width: 6, height: 6, background: '#f9a8d4', opacity: 0.6, animationDuration: '3.5s', animationDelay: '0.5s', borderRadius: '50%' } },
+            { style: { bottom: '20%', right: '12%', width: 10, height: 10, background: '#74c69d', opacity: 0.45, animationDuration: '4.5s', animationDelay: '1.5s', borderRadius: '50%' } },
+          ] as const).map((p, i) => (
+            <div key={i} className="absolute avo-float" style={p.style as React.CSSProperties} />
+          ))}
         </div>
 
-        {/* Headline — words animate in with staggered delay */}
-        <h1 className="relative text-5xl md:text-7xl font-extrabold leading-tight tracking-tight mb-6 max-w-4xl">
-          {['Auto-Caption', 'Your', 'Videos'].map((word, i) => (
-            <span
-              key={word}
-              className="hero-word mr-3"
-              style={{ animationDelay: `${i * 120}ms` }}
-            >
-              {i < 2 ? word : <span className="shimmer-text">{word}</span>}
-            </span>
-          ))}
-          <br />
-          {['in', 'Seconds.'].map((word, i) => (
-            <span
-              key={word}
-              className="hero-word mr-3"
-              style={{ animationDelay: `${360 + i * 120}ms` }}
-            >
-              {word}
-            </span>
-          ))}
+        {/* Olly character */}
+        <div
+          className="avo-float select-none mb-7"
+          style={{ fontSize: 100, filter: 'drop-shadow(0 18px 36px rgba(45,106,79,.22)) drop-shadow(0 6px 14px rgba(244,114,182,.18))' }}
+        >
+          🥑
+        </div>
+
+        {/* Pill badge */}
+        <div
+          className="slide-up inline-flex items-center gap-2 px-4 py-1.5 rounded-full font-display font-semibold text-sm mb-5"
+          style={{ background: '#d8f3dc', color: '#1b4332', animationDelay: '80ms' }}
+        >
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#52b788' }} />
+          Avocado AI Voice Translator
+        </div>
+
+        {/* Heading */}
+        <h1
+          className="slide-up font-display font-bold leading-[1.1] mb-4 max-w-3xl"
+          style={{ fontSize: 'clamp(3rem,7.5vw,5.5rem)', color: '#1b4332', animationDelay: '160ms' }}
+        >
+          Hi, I&apos;m{' '}
+          <span className="shimmer-green">Olly!</span>
+          {' '}🌸
         </h1>
 
-        {/* Sub */}
-        <p className="hero-word relative text-lg md:text-xl text-gray-400 max-w-2xl mb-10 leading-relaxed"
-          style={{ animationDelay: '600ms' }}>
-          AI captions, 18 pro fonts, 5 animation styles, VEED-style inline editing, and MP4 burn — all free, all private, all in your browser.
+        <h2
+          className="slide-up font-display text-2xl md:text-3xl font-medium mb-4"
+          style={{ color: '#2d6a4f', animationDelay: '260ms' }}
+        >
+          Your AI avocado voice-to-caption translator 🎤
+        </h2>
+
+        <p
+          className="slide-up text-lg md:text-xl mb-10 max-w-xl leading-relaxed"
+          style={{ color: '#78716c', animationDelay: '360ms' }}
+        >
+          Drop in any video — Olly listens, transcribes, and turns your words into beautiful styled captions. Free. Private. On your device.
         </p>
 
-        {/* Dropzone */}
-        <div id="upload-anchor" className="relative w-full max-w-2xl hero-word" style={{ animationDelay: '750ms' }}>
+        {/* Feature pills */}
+        <div className="slide-up flex flex-wrap justify-center gap-2 mb-10" style={{ animationDelay: '440ms' }}>
+          {[
+            ['🎙️', 'Whisper AI'], ['✨', '5 Animations'], ['🎨', '18 Fonts'],
+            ['🔥', 'Burn MP4'], ['📄', 'SRT & VTT'], ['🛡️', 'Private'],
+          ].map(([emoji, label]) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full font-display text-sm font-semibold"
+              style={{ background: '#f0faf4', color: '#2d6a4f', border: '1.5px solid #95d5b2' }}
+            >
+              {emoji} {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Upload */}
+        <div id="upload-zone" className="slide-up w-full max-w-2xl" style={{ animationDelay: '540ms' }}>
           <UploadZone onUpload={onUpload} />
         </div>
 
-        {/* Trust row */}
-        <div className="hero-word flex flex-wrap justify-center gap-4 mt-8" style={{ animationDelay: '880ms' }}>
-          {BADGES.map((b) => (
-            <span key={b.label} className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-              <span>{b.icon}</span> {b.label}
-            </span>
-          ))}
-        </div>
-
         {/* Scroll cue */}
-        <div className="hero-word absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-gray-600 text-xs"
-          style={{ animationDelay: '1000ms' }}>
-          <span>scroll</span>
-          <div className="w-px h-8 bg-gradient-to-b from-gray-700 to-transparent" />
+        <div className="slide-up absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5"
+          style={{ opacity: 0.4, animationDelay: '800ms' }}>
+          <span className="font-display text-xs font-semibold" style={{ color: '#40916c' }}>see what Olly can do</span>
+          <div className="w-px h-8" style={{ background: 'linear-gradient(to bottom, #52b788, transparent)' }} />
         </div>
       </section>
 
-      {/* ── FEATURES ───────────────────────────────────────────────── */}
-      <section id="features" className="relative py-24 px-6">
+      {/* ── FEATURES ──────────────────────────────────────────────── */}
+      <section id="features" className="py-24 px-6" style={{ background: 'var(--avo-700)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16" data-reveal>
-            <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-3">Everything you need</p>
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-4">Built for creators who move fast</h2>
-            <p className="text-gray-400 text-lg max-w-xl mx-auto">
-              No subscriptions. No watermarks. Just powerful caption tooling that runs on your own machine.
+            <p className="font-display text-sm font-bold uppercase tracking-widest mb-3" style={{ color: '#74c69d' }}>
+              everything packed in
+            </p>
+            <h2 className="font-display text-4xl md:text-5xl font-bold mb-4" style={{ color: '#d8f3dc' }}>
+              Olly&apos;s superpowers 💪
+            </h2>
+            <p className="text-lg max-w-md mx-auto" style={{ color: '#74c69d' }}>
+              No signup. No limits. No hidden costs. Just caption magic.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                data-reveal
-                style={{ transitionDelay: `${f.delay}ms` }}
-                className={`feature-card relative rounded-2xl p-6 bg-gradient-to-br ${f.grad} ring-1 ${f.ring} overflow-hidden`}
-              >
-                {/* glow corner */}
-                <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full blur-2xl opacity-30"
-                  style={{ background: 'white' }} />
-                <div className="text-3xl mb-4">{f.icon}</div>
-                <h3 className="font-bold text-lg mb-2 text-white">{f.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{f.desc}</p>
+            {FEATURES.map((f, i) => (
+              <div key={f.title} data-reveal style={{ transitionDelay: `${(i % 3) * 75}ms` }}>
+                <div
+                  className="feature-card h-full rounded-3xl p-7"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(148,213,178,0.2)' }}
+                >
+                  <div className="text-4xl mb-4">{f.icon}</div>
+                  <h3 className="font-display text-xl font-semibold mb-2" style={{ color: '#d8f3dc' }}>{f.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: '#74c69d' }}>{f.desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ───────────────────────────────────────────── */}
-      <section id="how" className="relative py-24 px-6 overflow-hidden">
-        {/* bg accent */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="w-[600px] h-[400px] bg-violet-700/8 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-5xl mx-auto">
+      {/* ── HOW IT WORKS ──────────────────────────────────────────── */}
+      <section id="how" className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16" data-reveal>
-            <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-3">Dead simple</p>
-            <h2 className="text-4xl md:text-5xl font-extrabold">From upload to export in 3 steps</h2>
+            <p className="font-display text-sm font-bold uppercase tracking-widest mb-3" style={{ color: '#40916c' }}>
+              ridiculously simple
+            </p>
+            <h2 className="font-display text-4xl md:text-5xl font-bold" style={{ color: '#1b4332' }}>
+              3 steps to perfect captions ✨
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {STEPS.map((s, i) => (
-              <div
-                key={s.n}
-                data-reveal
-                style={{ transitionDelay: `${i * 120}ms` }}
-                className="relative rounded-2xl p-7 bg-gray-900/70 ring-1 ring-gray-800 text-center"
-              >
-                {/* connector line (desktop) */}
+              <div key={s.n} data-reveal style={{ transitionDelay: `${i * 110}ms` }} className="text-center relative">
                 {i < STEPS.length - 1 && (
-                  <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-px bg-gradient-to-r from-gray-700 to-transparent z-10" />
+                  <div
+                    className="hidden md:block absolute top-10 h-0.5"
+                    style={{ left: '58%', right: '-42%', background: 'linear-gradient(to right, #95d5b2, transparent)' }}
+                  />
                 )}
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-800 text-3xl mb-5 mx-auto">
+                <div
+                  className="inline-flex items-center justify-center w-20 h-20 rounded-3xl text-4xl mb-5 shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #d8f3dc, #f0faf4)', border: '2px solid #95d5b2' }}
+                >
                   {s.icon}
                 </div>
-                <div className="text-xs font-mono text-gray-600 mb-1">{s.n}</div>
-                <h3 className="font-bold text-lg mb-2">{s.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{s.desc}</p>
+                <div className="font-display text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#74c69d' }}>
+                  step {s.n}
+                </div>
+                <h3 className="font-display text-xl font-semibold mb-2" style={{ color: '#1b4332' }}>{s.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#78716c' }}>{s.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── ANIMATION SHOWCASE ─────────────────────────────────────── */}
-      <section className="py-20 px-6" data-reveal>
-        <div className="max-w-4xl mx-auto rounded-3xl p-10 md:p-14 text-center ring-1 ring-gray-800 bg-gray-900/50 relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute top-0 left-1/3 w-64 h-40 bg-blue-600/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/3 w-64 h-40 bg-violet-600/10 rounded-full blur-3xl" />
-          </div>
-          <p className="relative text-xs font-semibold uppercase tracking-widest text-emerald-400 mb-4">Creator-grade animations</p>
-          <h2 className="relative text-3xl md:text-4xl font-extrabold mb-4">
-            Stand out with <span className="shimmer-text">cinematic captions</span>
+      {/* ── FINAL CTA ─────────────────────────────────────────────── */}
+      <section
+        className="py-24 px-6 text-center"
+        data-reveal
+        style={{ background: 'linear-gradient(135deg, #d8f3dc 0%, #fce7f3 100%)' }}
+      >
+        <div className="max-w-xl mx-auto">
+          <div className="avo-wobble text-7xl mb-6 inline-block">🥑</div>
+          <h2 className="font-display text-4xl md:text-5xl font-bold mb-3" style={{ color: '#1b4332' }}>
+            Ready? Let&apos;s caption! 🌸
           </h2>
-          <p className="relative text-gray-400 mb-8 max-w-lg mx-auto">
-            Word-by-word Impact bounce for Reels. Karaoke highlight for tutorials. Fade-in for polished documentaries. No plugins, no plugins, no subscriptions.
-          </p>
-          <div className="relative flex flex-wrap justify-center gap-3">
-            {['None (static)', 'Fade', 'Word Pop', 'Karaoke', 'Impact'].map((label) => (
-              <span key={label} className="px-4 py-2 rounded-full text-sm font-semibold bg-gray-800 ring-1 ring-gray-700 text-gray-300">
-                {label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ──────────────────────────────────────────────── */}
-      <section className="py-28 px-6 text-center" data-reveal>
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
-            Ready to caption your next video?
-          </h2>
-          <p className="text-gray-400 text-lg mb-10">
-            It takes under 60 seconds. No account, no payment, no nonsense.
+          <p className="text-lg mb-10" style={{ color: '#2d6a4f' }}>
+            Olly is waiting to help you make amazing content.
           </p>
           <UploadZone onUpload={onUpload} />
         </div>
       </section>
 
-      {/* ── FOOTER ─────────────────────────────────────────────────── */}
-      <footer className="border-t border-gray-900 py-8 px-6 text-center text-gray-600 text-xs">
-        CaptionAI &middot; Powered by Whisper + FFmpeg.wasm &middot; Runs 100% in your browser &middot; Free forever
+      {/* ── FOOTER ──────────────────────────────────────────────────── */}
+      <footer
+        className="py-8 px-6 text-center text-sm border-t font-display"
+        style={{ color: '#74c69d', borderColor: '#d8f3dc', background: '#f0faf4' }}
+      >
+        Olly-AI 🥑 &middot; Powered by OpenAI Whisper + FFmpeg.wasm &middot; Your video stays on your device &middot; Free forever 🌸
       </footer>
     </div>
   );

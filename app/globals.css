@@ -27,10 +27,86 @@
 @font-face { font-family: 'Pacifico';         src: url('/fonts/Pacifico-Regular.ttf')         format('truetype'); font-display: swap; }
 @font-face { font-family: 'Caveat';           src: url('/fonts/Caveat-Regular.ttf')           format('truetype'); font-display: swap; }
 
-body {
-  background: #030712;
-  color: #f9fafb;
+/* ── Olly-AI Avocado Theme ─────────────────────────────────── */
+:root {
+  --avo-900: #0f1f16;
+  --avo-800: #1a3527;
+  --avo-700: #1b4332;
+  --avo-600: #2d6a4f;
+  --avo-500: #40916c;
+  --avo-400: #52b788;
+  --avo-300: #74c69d;
+  --avo-200: #95d5b2;
+  --avo-100: #d8f3dc;
+  --avo-50:  #f0faf4;
+
+  --pink-700: #be185d;
+  --pink-600: #db2777;
+  --pink-500: #ec4899;
+  --pink-400: #f472b6;
+  --pink-300: #f9a8d4;
+  --pink-100: #fce7f3;
+  --pink-50:  #fdf2f8;
+
+  --cream:    #fffbf0;
+  --cream-2:  #fef3c7;
+  --seed:     #92400e;
+
+  --font-display: var(--font-fredoka, 'Fredoka', cursive);
+  --font-body:    'Nunito', system-ui, sans-serif;
 }
+
+body {
+  background: var(--cream);
+  color: #1c1917;
+  font-family: var(--font-body);
+}
+
+.font-display { font-family: var(--font-display); }
+
+/* ── Olly animations ──────────────────────────────────────── */
+@keyframes avo-float   { 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-14px) rotate(4deg)} }
+@keyframes avo-wobble  { 0%,100%{transform:rotate(-3deg) scale(1)} 40%{transform:rotate(3deg) scale(1.06)} 70%{transform:rotate(-2deg) scale(.97)} }
+@keyframes slide-up    { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pop-in      { 0%{opacity:0;transform:scale(.82)} 72%{transform:scale(1.04)} 100%{opacity:1;transform:scale(1)} }
+@keyframes page-fade   { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin-seed   { to{transform:rotate(360deg)} }
+@keyframes shimmer-avo { 0%{background-position:-200% center} 100%{background-position:200% center} }
+@keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(64,145,108,.4)} 60%{box-shadow:0 0 0 12px rgba(64,145,108,0)} }
+@keyframes twinkle     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+
+.avo-float  { animation: avo-float  4s ease-in-out infinite; }
+.avo-wobble { animation: avo-wobble 3s ease-in-out infinite; }
+.slide-up   { animation: slide-up   .55s cubic-bezier(.22,1,.36,1) both; }
+.pop-in     { animation: pop-in     .45s cubic-bezier(.22,1,.36,1) both; }
+.page-fade  { animation: page-fade  .4s ease-out both; }
+.spin-seed  { animation: spin-seed  .9s linear infinite; }
+.pulse-green{ animation: pulse-green 2.2s ease-out infinite; }
+
+.shimmer-green {
+  background: linear-gradient(90deg, #1b4332 0%, #52b788 35%, #f472b6 65%, #1b4332 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-avo 4s linear infinite;
+}
+
+/* Scroll reveal */
+[data-reveal] { opacity:0; transform:translateY(26px); transition:opacity .65s ease,transform .65s ease; }
+[data-reveal].revealed { opacity:1; transform:translateY(0); }
+
+/* Feature card hover */
+.feature-card { transition: transform .22s ease, box-shadow .22s ease; }
+.feature-card:hover { transform: translateY(-5px); box-shadow: 0 18px 40px rgba(45,106,79,.18); }
+
+/* ── Star rating ──────────────────────────────────────────── */
+.star-btn { transition: transform .15s ease; }
+.star-btn:hover { transform: scale(1.2) rotate(-6deg); }
+
+/* ── Editor tool overrides (avocado accent colors) ────────── */
+.avo-editor input[type="range"] { accent-color: var(--avo-400); }
+.avo-editor input[type="checkbox"] { accent-color: var(--avo-400); }
 
 /* Caption animation keyframes */
 @keyframes caption-fade-in {
