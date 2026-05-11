@@ -69,7 +69,7 @@ export function StylePanel({ style, onChange, selectedSegment, onSegmentChange }
   };
   const exitEmphasis = () => { setIsEmphasizing(false); setSelectedIdxs(new Set()); };
   const toggleWord = (i: number) =>
-    setSelectedIdxs((prev) => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
+    setSelectedIdxs((prev) => { const n = new Set(prev); if (n.has(i)) { n.delete(i); } else { n.add(i); } return n; });
 
   const applyWordStyle = (delta: Partial<WordStyle>) => {
     if (!selectedSegment?.words || !onSegmentChange) return;

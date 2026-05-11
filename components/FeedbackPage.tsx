@@ -341,7 +341,7 @@ function AboutTheMaker() {
             boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
           }}
         >
-          ✦ hi, I'm Sakshi ✦
+          ✦ hi, I&apos;m Sakshi ✦
         </span>
 
         <div className="flex flex-col md:flex-row gap-6 items-start mt-2">

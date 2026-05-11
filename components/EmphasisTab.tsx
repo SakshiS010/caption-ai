@@ -194,7 +194,7 @@ export function EmphasisTab({ segments, onSegmentsChange, currentTime }: Props) 
     } else {
       setSelectedIdxs(prev => {
         const n = new Set(prev);
-        n.has(idx) ? n.delete(idx) : n.add(idx);
+        if (n.has(idx)) { n.delete(idx); } else { n.add(idx); }
         if (n.size === 0) setActiveSegId(null);
         return n;
       });

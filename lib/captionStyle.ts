@@ -220,6 +220,7 @@ export function buildPreviewCSS(style: CaptionStyle, videoHeight: number): CSSPr
 
 // Outer wrapper positioning for the preview overlay.
 // positionX/positionY are 0–100 % and define the CENTER anchor of the caption.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function buildOverlayCSS(style: CaptionStyle, _videoHeight: number): CSSProperties {
   return {
     position: 'absolute',
