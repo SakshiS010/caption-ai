@@ -345,22 +345,79 @@ function AboutTheMaker() {
         </span>
 
         <div className="flex flex-col md:flex-row gap-6 items-start mt-2">
-          {/* Polaroid avatar */}
+          {/* Polaroid photo */}
           <div className="mx-auto md:mx-0 flex-shrink-0">
+            {/* outer polaroid frame */}
             <div
-              className="p-2 pb-6 inline-block"
+              className="inline-block relative"
               style={{
-                background: '#fff',
-                boxShadow: '0 4px 18px rgba(0,0,0,0.12)',
+                padding: '8px 8px 36px 8px',
+                background: '#fffbf0',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.18), 4px 4px 0 0 #1b4332',
                 transform: 'rotate(-4deg)',
+                border: '1.5px solid #e5e7eb',
               }}
             >
-              <div className="w-32 h-32 flex items-center justify-center" style={{ background: 'linear-gradient(145deg, #f9a8d4, #74c69d)' }}>
-                <span className="font-display text-6xl font-black text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>S</span>
+              {/* pink corner accents */}
+              {([
+                { top: 4,      left: 4,  rot: 0   },
+                { top: 4,      right: 4, rot: 90  },
+                { bottom: 32,  right: 4, rot: 180 },
+                { bottom: 32,  left: 4,  rot: 270 },
+              ] as { top?: number; bottom?: number; left?: number; right?: number; rot: number }[]).map(({ rot, ...pos }, i) => (
+                <span key={i} className="absolute" style={{ ...pos, width: 12, height: 12, borderLeft: '2px solid #f472b6', borderTop: '2px solid #f472b6', borderRadius: '3px 0 0 0', transform: `rotate(${rot}deg)` } as React.CSSProperties} />
+              ))}
+
+              {/* photo — replace gradient S with actual image */}
+              <div className="relative overflow-hidden" style={{ width: 148, height: 180 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/sakshi.jpg"
+                  alt="Sakshi Singh"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center top',
+                    display: 'block',
+                  }}
+                  onError={(e) => {
+                    /* fallback to gradient if image missing */
+                    const t = e.currentTarget;
+                    t.style.display = 'none';
+                    const fallback = t.nextElementSibling as HTMLElement | null;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+                {/* fallback gradient — hidden when photo loads */}
+                <div
+                  className="absolute inset-0 items-center justify-center"
+                  style={{ display: 'none', background: 'linear-gradient(145deg, #f9a8d4, #74c69d)' }}
+                >
+                  <span className="font-display text-6xl font-black text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>S</span>
+                </div>
+
+                {/* subtle pink vignette overlay */}
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  background: 'linear-gradient(180deg, transparent 60%, rgba(244,114,182,0.12) 100%)',
+                }} />
               </div>
-              <p className="text-center font-display text-xs mt-2" style={{ color: '#1b4332', fontFamily: 'Caveat, cursive', fontSize: 18 }}>
+
+              {/* handwritten caption below photo inside polaroid */}
+              <p
+                className="text-center mt-1"
+                style={{ color: '#1b4332', fontFamily: 'Caveat, cursive', fontSize: 20, lineHeight: 1.3 }}
+              >
                 ~ Sakshi ~
               </p>
+
+              {/* small sticker tag */}
+              <span
+                className="absolute -bottom-3 -right-3 px-2 py-0.5 rounded-full font-display text-[9px] font-bold rotate-[8deg]"
+                style={{ background: '#ec4899', color: '#fff', boxShadow: '0 2px 6px rgba(236,72,153,.4)' }}
+              >
+                🥑 maker
+              </span>
             </div>
           </div>
 
