@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { CaptionSegment } from '@/lib/types';
+import type { CaptionSegment, WordSpan, WordStyle } from '@/lib/types';
 import {
   type CaptionStyle,
   applyLetterCase,
@@ -224,6 +224,40 @@ export function VideoPlayer({
   );
 }
 
+/* Build CSS overrides for a single word's WordStyle (only the fields that differ from base). */
+function wordOverrideCSS(ws: WordStyle | undefined, captionStyle: CaptionStyle, videoH: number): React.CSSProperties {
+  if (!ws) return {};
+  const sc = videoH / 288;
+  const out: React.CSSProperties = {};
+  if (ws.color)                  out.color      = ws.color;
+  if (ws.bold     !== undefined) out.fontWeight  = ws.bold ? 700 : 400;
+  if (ws.italic   !== undefined) out.fontStyle   = ws.italic ? 'italic' : 'normal';
+  if (ws.scale    !== undefined) out.fontSize    = `${captionStyle.fontSize * sc * ws.scale}px`;
+  if (ws.fontFamily)             out.fontFamily  = `"${ws.fontFamily}", sans-serif`;
+  return out;
+}
+
+/* Render a row of word <span>s, each with its own per-word style override. */
+function renderWordRow(
+  spans: WordSpan[],
+  captionStyle: CaptionStyle,
+  videoH: number,
+  getSpanStyle?: (i: number, ws: WordStyle | undefined) => React.CSSProperties,
+  getClassName?: (i: number) => string,
+): React.ReactNode {
+  return spans.map((w, i) => {
+    const override  = wordOverrideCSS(w.style, captionStyle, videoH);
+    const extra     = getSpanStyle?.(i, w.style) ?? {};
+    const className = getClassName?.(i);
+    return (
+      <span key={i} className={className} style={{ display: 'inline-block', ...override, ...extra }}>
+        {i > 0 ? <span style={{ fontWeight: 400, fontStyle: 'normal', color: 'inherit', fontSize: 'inherit' }}> </span> : null}
+        {w.text}
+      </span>
+    );
+  });
+}
+
 function renderCaption(
   seg: CaptionSegment,
   words: string[],
@@ -238,75 +272,94 @@ function renderCaption(
     ? { cursor: 'text', outline: '1.5px dashed rgba(255,255,255,0.4)', outlineOffset: 5, borderRadius: 3 }
     : {};
 
+  // Resolve word spans (use seg.words if aligned, otherwise fall back to plain words)
+  const spans: WordSpan[] | null =
+    seg.words && seg.words.length === words.length ? seg.words : null;
+  const hasWordStyles = spans?.some((w) => w.style && Object.keys(w.style).length > 0) ?? false;
+
+  const flexRow: React.CSSProperties = {
+    display: 'inline-flex', flexWrap: 'wrap',
+    columnGap: '0.3em', rowGap: 0,
+    justifyContent:
+      style.alignment === 'center' ? 'center' :
+      style.alignment === 'right'  ? 'flex-end' : 'flex-start',
+  };
+
   switch (style.animation) {
     case 'fade':
       return (
-        <span key={seg.start} style={{ ...css, ...hoverCSS }} className="caption-anim-fade">
-          {fullText}
+        <span key={seg.start} style={{ ...css, ...hoverCSS, ...(hasWordStyles ? flexRow : {}) }} className="caption-anim-fade">
+          {hasWordStyles && spans
+            ? renderWordRow(spans, style, videoH)
+            : fullText}
         </span>
       );
 
-    case 'word-pop':
+    case 'word-pop': {
+      const activeSpan = spans?.[wordIdx];
       return (
         <span
           key={`${seg.start}-${wordIdx}`}
-          style={{ ...css, ...hoverCSS }}
+          style={{ ...css, ...hoverCSS, ...wordOverrideCSS(activeSpan?.style, style, videoH) }}
           className="caption-anim-pop"
         >
           {words[wordIdx] ?? ''}
         </span>
       );
+    }
 
     case 'karaoke':
       return (
-        <span style={{ ...css, ...hoverCSS }}>
-          {words.map((w, i) => (
-            <span key={i} style={i === wordIdx ? { color: style.highlightColor } : undefined}>
-              {i > 0 ? ' ' : ''}{w}
+        <span style={{ ...css, ...hoverCSS, ...flexRow }}>
+          {(spans ?? words.map((t): WordSpan => ({ text: t }))).map((w, i) => (
+            <span
+              key={i}
+              style={{
+                display: 'inline-block',
+                ...wordOverrideCSS(w.style, style, videoH),
+                // highlight colour overrides word colour for active word
+                ...(i === wordIdx ? { color: style.highlightColor } : {}),
+              }}
+            >
+              {i > 0 ? <span style={{ color: 'inherit' }}> </span> : null}
+              {w.text}
             </span>
           ))}
         </span>
       );
 
-    case 'impact':
+    case 'impact': {
+      const activeSpan2 = spans?.[wordIdx];
       return (
         <span
           key={`${seg.start}-${wordIdx}`}
-          style={{ ...css, ...hoverCSS }}
+          style={{ ...css, ...hoverCSS, ...wordOverrideCSS(activeSpan2?.style, style, videoH) }}
           className="caption-anim-impact"
         >
           {words[wordIdx] ?? ''}
         </span>
       );
+    }
 
     case 'emphasis': {
-      // All words visible simultaneously; active word springs up + glows.
       const baseColor = css.color as string;
       const baseFW    = css.fontWeight;
       return (
-        <span
-          style={{
-            ...css,
-            ...hoverCSS,
-            display: 'inline-flex',
-            flexWrap: 'wrap',
-            columnGap: '0.3em',
-            rowGap: 0,
-            justifyContent:
-              style.alignment === 'center' ? 'center' :
-              style.alignment === 'right'  ? 'flex-end' : 'flex-start',
-          }}
-        >
-          {words.map((w, i) => {
+        <span style={{ ...css, ...hoverCSS, ...flexRow }}>
+          {(spans ?? words.map((t): WordSpan => ({ text: t }))).map((w, i) => {
             const isActive = i === wordIdx;
+            const wOver    = wordOverrideCSS(w.style, style, videoH);
             return (
               <span
                 key={isActive ? `a-${wordIdx}` : `i-${i}`}
                 className={isActive ? 'caption-word-active' : 'caption-word-idle'}
                 style={{
                   display: 'inline-block',
-                  color:      isActive ? style.highlightColor : baseColor,
-                  fontWeight: isActive ? 700 : baseFW,
+                  color:      isActive ? style.highlightColor : (w.style?.color ?? baseColor),
+                  fontWeight: isActive ? 700 : (w.style?.bold !== undefined ? (w.style.bold ? 700 : 400) : baseFW),
+                  fontStyle:  w.style?.italic !== undefined ? (w.style.italic ? 'italic' : 'normal') : undefined,
+                  fontSize:   wOver.fontSize,
+                  fontFamily: wOver.fontFamily,
                   opacity:    isActive ? 1 : 0.72,
                   textShadow: isActive
                     ? `0 0 12px ${style.highlightColor}99, 0 0 24px ${style.highlightColor}44`
@@ -314,7 +367,8 @@ function renderCaption(
                   transformOrigin: 'center bottom',
                 }}
               >
-                {w}
+                {i > 0 ? <span style={{ fontStyle: 'normal', fontWeight: 400 }}> </span> : null}
+                {w.text}
               </span>
             );
           })}
@@ -323,6 +377,12 @@ function renderCaption(
     }
 
     default:
-      return <span style={{ ...css, ...hoverCSS }}>{fullText}</span>;
+      return (
+        <span style={{ ...css, ...hoverCSS, ...(hasWordStyles ? flexRow : {}) }}>
+          {hasWordStyles && spans
+            ? renderWordRow(spans, style, videoH)
+            : fullText}
+        </span>
+      );
   }
 }

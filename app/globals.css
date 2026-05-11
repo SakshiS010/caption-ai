@@ -202,6 +202,128 @@ body {
 .feature-card:hover { transform: translateY(-4px); }
 .feature-card { transition: transform .25s ease, box-shadow .25s ease; }
 
+/* ── Olly mascot SVG animations ──────────────────────────────────── */
+@keyframes olly-blink   { 0%, 92%, 100% { transform: scaleY(1); } 94%, 96% { transform: scaleY(0.08); } }
+@keyframes olly-bob     { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes olly-wave    { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-22deg); } 75% { transform: rotate(22deg); } }
+@keyframes olly-heart   { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+@keyframes bubble-pop   { 0% { opacity: 0; transform: scale(.6) translateY(8px) rotate(-3deg); } 60% { transform: scale(1.05) translateY(0) rotate(-1deg); } 100% { opacity: 1; transform: scale(1) translateY(0) rotate(-1.5deg); } }
+@keyframes bubble-pop-r { 0% { opacity: 0; transform: scale(.6) translateY(8px) rotate(3deg); } 60% { transform: scale(1.05) translateY(0) rotate(1deg); } 100% { opacity: 1; transform: scale(1) translateY(0) rotate(1.5deg); } }
+@keyframes sticker-in   { 0% { opacity: 0; transform: scale(.85) rotate(0deg); } 70% { transform: scale(1.04) rotate(-2deg); } 100% { opacity: 1; transform: scale(1) rotate(-1.5deg); } }
+@keyframes confetti-drop{ 0% { opacity: 0; transform: translateY(-40px) rotate(0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(120px) rotate(280deg); } }
+@keyframes arrow-bob    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+@keyframes type-cursor  { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+.olly-float       { animation: olly-bob   3.6s ease-in-out infinite; transform-origin: center bottom; }
+.olly-wave-arm    { animation: olly-wave  1.4s ease-in-out infinite; }
+.bubble-pop       { animation: bubble-pop .6s cubic-bezier(.34,1.56,.64,1) both; }
+.bubble-pop-r     { animation: bubble-pop-r .6s cubic-bezier(.34,1.56,.64,1) both; }
+.sticker-in       { animation: sticker-in .55s cubic-bezier(.34,1.56,.64,1) both; }
+.confetti-bit     { animation: confetti-drop 2.2s ease-in infinite; }
+.arrow-bob        { animation: arrow-bob 1.4s ease-in-out infinite; }
+.type-cursor      { animation: type-cursor 1s steps(2) infinite; }
+
+/* Speech bubble — tail uses a clip-path on a pseudo element via .has-tail */
+.speech-bubble {
+  position: relative;
+  background: #fffbf0;
+  color: #1b4332;
+  border: 2.5px solid #1b4332;
+  border-radius: 18px;
+  padding: 14px 18px;
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  line-height: 1.25;
+  box-shadow: 4px 4px 0 0 #1b4332, 4px 4px 0 2px #1b4332;
+}
+.speech-bubble.pink {
+  background: #fdf2f8;
+  border-color: #be185d;
+  box-shadow: 4px 4px 0 0 #be185d;
+}
+.speech-bubble::before,
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+}
+/* Tail pointing LEFT (bubble is to the right of Olly) */
+.speech-bubble.tail-left::before {
+  left: -18px; top: 38%;
+  border: 10px solid transparent;
+  border-right-color: #1b4332;
+  border-left: 0;
+}
+.speech-bubble.tail-left::after {
+  left: -14px; top: 38%;
+  border: 8px solid transparent;
+  border-right-color: #fffbf0;
+  border-left: 0;
+}
+.speech-bubble.pink.tail-left::before { border-right-color: #be185d; }
+.speech-bubble.pink.tail-left::after  { border-right-color: #fdf2f8; }
+/* Tail pointing DOWN (bubble is above) */
+.speech-bubble.tail-down::before {
+  bottom: -18px; left: 26px;
+  border: 10px solid transparent;
+  border-top-color: #1b4332;
+  border-bottom: 0;
+}
+.speech-bubble.tail-down::after {
+  bottom: -14px; left: 28px;
+  border: 8px solid transparent;
+  border-top-color: #fffbf0;
+  border-bottom: 0;
+}
+
+/* Sticker-style card with double border and slight rotation */
+.sticker-card {
+  background: #fffbf0;
+  border: 3px solid #1b4332;
+  border-radius: 22px;
+  box-shadow: 6px 6px 0 0 #1b4332, 0 0 0 1px rgba(64,145,108,0.12);
+  transform: rotate(-1.5deg);
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+}
+.sticker-card.pink {
+  border-color: #be185d;
+  box-shadow: 6px 6px 0 0 #be185d, 0 0 0 1px rgba(244,114,182,0.12);
+}
+.sticker-card:hover {
+  transform: rotate(0deg) translateY(-5px) scale(1.01);
+  box-shadow: 12px 12px 0 0 #1b4332, 0 12px 32px rgba(45,106,79,.18);
+}
+.sticker-card.pink:hover {
+  box-shadow: 12px 12px 0 0 #be185d, 0 12px 32px rgba(236,72,153,.18);
+}
+
+/* Speech bubble green variant */
+.speech-bubble.green {
+  background: #f0faf4;
+  border-color: #2d6a4f;
+  box-shadow: 4px 4px 0 0 #2d6a4f;
+}
+.speech-bubble.green.tail-left::before { border-right-color: #2d6a4f; }
+.speech-bubble.green.tail-left::after  { border-right-color: #f0faf4; }
+.speech-bubble.green.tail-down::before { border-top-color: #2d6a4f; }
+.speech-bubble.green.tail-down::after  { border-top-color: #f0faf4; }
+
+/* Soft radial glow behind Olly — drop behind with negative z */
+.olly-glow-pink {
+  filter: drop-shadow(0 0 22px rgba(244,114,182,.45)) drop-shadow(0 0 8px rgba(244,114,182,.3));
+}
+.olly-glow-green {
+  filter: drop-shadow(0 0 22px rgba(64,145,108,.40)) drop-shadow(0 0 8px rgba(64,145,108,.25));
+}
+
+/* Gradient divider */
+.avo-divider {
+  height: 3px;
+  border: none;
+  background: linear-gradient(90deg, transparent, #40916c 25%, #f472b6 50%, #40916c 75%, transparent);
+  border-radius: 99px;
+}
+
 /* Thin dark scrollbar for the caption editor */
 ::-webkit-scrollbar {
   width: 6px;

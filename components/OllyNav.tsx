@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { OllyBadge } from './OllyMascot';
 
 interface OllyNavProps {
   step: 1 | 2 | 3;
@@ -29,9 +30,17 @@ export function OllyNav({ step, onHome, dark = false, rightSlot }: OllyNavProps)
       style={{ background: bg, backdropFilter: 'blur(16px)', borderBottom: `1.5px solid ${bdr}` }}
     >
       {/* Logo */}
-      <button onClick={onHome} className="flex items-center gap-2 group">
-        <span className="text-2xl group-hover:scale-110 transition-transform duration-200 inline-block">🥑</span>
-        <span className="font-display text-xl font-semibold" style={{ color: logo }}>Olly-AI</span>
+      <button onClick={onHome} className="flex items-center gap-1.5 group">
+        <span
+          className="font-display text-xl font-bold tracking-tight transition-colors duration-200"
+          style={{ color: logo }}
+        >
+          Olly-AI
+        </span>
+        <OllyBadge
+          size={36}
+          className="group-hover:scale-110 transition-transform duration-200"
+        />
       </button>
 
       {/* Step breadcrumb */}

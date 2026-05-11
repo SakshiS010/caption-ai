@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
-import type { CaptionSegment } from '@/lib/types';
+import type { CaptionSegment, WordStyle } from '@/lib/types';
 
 interface Props {
   segments:    CaptionSegment[];
@@ -11,34 +11,49 @@ interface Props {
   onSelect?:   (id: string) => void;
 }
 
-function fmt(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = (seconds % 60).toFixed(1).padStart(4, '0');
-  return `${m}:${s}`;
+function fmt(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = (s % 60).toFixed(1).padStart(4, '0');
+  return `${m}:${sec}`;
+}
+
+function hasWordStyle(ws?: WordStyle): boolean {
+  return !!(ws && (ws.color || ws.bold !== undefined || ws.italic !== undefined || ws.scale !== undefined));
+}
+
+function styledWordCount(seg: CaptionSegment): number {
+  return seg.words?.filter((w) => hasWordStyle(w.style)).length ?? 0;
 }
 
 export function CaptionEditor({ segments, currentTime, onUpdate, selectedId, onSelect }: Props) {
-  const listRef    = useRef<HTMLDivElement>(null);
-  const itemRefs   = useRef<Record<string, HTMLDivElement | null>>({});
-
-  const updateText = (id: string, text: string) => {
-    onUpdate(segments.map((s) => (s.id === id ? { ...s, text } : s)));
-  };
-
-  const updateTime = (id: string, field: 'start' | 'end', raw: string) => {
-    const parsed = parseFloat(raw);
-    if (isNaN(parsed)) return;
-    onUpdate(segments.map((s) => (s.id === id ? { ...s, [field]: Math.max(0, parsed) } : s)));
-  };
+  const listRef  = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   /* Auto-scroll to selected segment */
   useEffect(() => {
     if (!selectedId) return;
     const el = itemRefs.current[selectedId];
-    if (el && listRef.current) {
-      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
+    if (el && listRef.current) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [selectedId]);
+
+  const updateText = (id: string, text: string) => {
+    onUpdate(
+      segments.map((s) => {
+        if (s.id !== id) return s;
+        // Re-sync words array when text changes (preserve styles if word count unchanged)
+        const tokens = text.split(/\s+/).filter(Boolean);
+        const newWords = s.words && s.words.length === tokens.length
+          ? tokens.map((t, i) => ({ text: t, style: s.words![i].style }))
+          : undefined;
+        return { ...s, text, words: newWords };
+      })
+    );
+  };
+
+  const updateTime = (id: string, field: 'start' | 'end', raw: string) => {
+    const v = parseFloat(raw);
+    if (!isNaN(v)) onUpdate(segments.map((s) => (s.id === id ? { ...s, [field]: Math.max(0, v) } : s)));
+  };
 
   if (segments.length === 0) {
     return (
@@ -53,6 +68,8 @@ export function CaptionEditor({ segments, currentTime, onUpdate, selectedId, onS
       {segments.map((seg) => {
         const isActive   = currentTime >= seg.start && currentTime <= seg.end;
         const isSelected = seg.id === selectedId;
+        const numStyled  = styledWordCount(seg);
+
         return (
           <div
             key={seg.id}
@@ -73,14 +90,12 @@ export function CaptionEditor({ segments, currentTime, onUpdate, selectedId, onS
               boxShadow: isSelected ? '0 0 0 1px rgba(244,114,182,0.25)' : 'none',
             }}
           >
-            {/* Timestamp row — editable when selected */}
-            <div className="flex items-center gap-2 mb-1.5 font-mono text-xs" style={{ color: '#74c69d' }}>
+            {/* Timestamp row */}
+            <div className="flex items-center gap-2 mb-2 font-mono text-xs" style={{ color: '#74c69d' }}>
               {isSelected ? (
                 <>
                   <input
-                    type="number"
-                    step="0.1"
-                    min="0"
+                    type="number" step="0.1" min="0"
                     defaultValue={seg.start.toFixed(1)}
                     onBlur={(e) => updateTime(seg.id, 'start', e.target.value)}
                     onClick={(e) => e.stopPropagation()}
@@ -89,9 +104,7 @@ export function CaptionEditor({ segments, currentTime, onUpdate, selectedId, onS
                   />
                   <span style={{ color: '#52b788' }}>→</span>
                   <input
-                    type="number"
-                    step="0.1"
-                    min="0"
+                    type="number" step="0.1" min="0"
                     defaultValue={seg.end.toFixed(1)}
                     onBlur={(e) => updateTime(seg.id, 'end', e.target.value)}
                     onClick={(e) => e.stopPropagation()}
@@ -109,8 +122,27 @@ export function CaptionEditor({ segments, currentTime, onUpdate, selectedId, onS
                   <span>{fmt(seg.end)}</span>
                 </>
               )}
+
+              {/* Word-emphasis badge */}
+              {numStyled > 0 && (
+                <span
+                  style={{
+                    marginLeft: isSelected ? 0 : 'auto',
+                    background: 'rgba(244,114,182,0.15)',
+                    border: '1px solid rgba(244,114,182,0.4)',
+                    color: '#f9a8d4',
+                    borderRadius: 4,
+                    padding: '1px 5px',
+                    fontSize: 9,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ✦ {numStyled} styled
+                </span>
+              )}
             </div>
 
+            {/* Text area */}
             <textarea
               className="w-full bg-transparent text-sm resize-none outline-none leading-relaxed"
               style={{ color: isSelected ? '#fff' : '#d1d5db' }}

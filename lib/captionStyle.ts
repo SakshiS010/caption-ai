@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { CaptionSegment } from './types';
+import type { CaptionSegment, WordSpan, WordStyle } from './types';
 
 // Curated font set. `family` MUST match the TTF's internal family name —
 // libass uses that, not the filename, to resolve FontName= in force_style.
@@ -163,7 +163,7 @@ export function buildPreviewCSS(style: CaptionStyle, videoHeight: number): CSSPr
   const fontPx = style.fontSize * scale;
   const outlinePx = style.outlineWidth * scale;
 
-  const css: CSSProperties = {
+  const css: CSSProperties & Record<string, unknown> = {
     fontFamily: `"${style.fontFamily}", sans-serif`,
     fontSize: `${fontPx}px`,
     fontWeight: style.bold ? 700 : 400,
@@ -175,19 +175,31 @@ export function buildPreviewCSS(style: CaptionStyle, videoHeight: number): CSSPr
       style.letterCase === 'uppercase' ? 'uppercase' :
       style.letterCase === 'lowercase' ? 'lowercase' : 'none',
     textAlign: style.alignment,
-    lineHeight: 1.2,
+    lineHeight: 1.25,
     display: 'inline-block',
     maxWidth: '90%',
   };
 
+  // Crisp VEED-style outline: paint-order paints the stroke BEHIND the fill,
+  // so the stroke appears around the letterforms (not through them).
+  // Combined with a dense 8-direction shadow for thicker outlines that
+  // -webkit-text-stroke alone can't reach without distorting glyph shape.
   if (style.outlineWidth > 0) {
     const o = outlinePx;
+    css.paintOrder = 'stroke fill';
+    css.WebkitTextStroke = `${Math.min(o * 1.4, 4)}px ${style.outlineColor}`;
+    // 8-point shadow stack — fills in any gaps -webkit-text-stroke leaves and
+    // extends outline thickness beyond the stroke cap.
     css.textShadow = [
-      `-${o}px -${o}px 0 ${style.outlineColor}`,
-      `${o}px -${o}px 0 ${style.outlineColor}`,
-      `-${o}px ${o}px 0 ${style.outlineColor}`,
-      `${o}px ${o}px 0 ${style.outlineColor}`,
-    ].join(', ');
+      [ -o,   -o],
+      [  0,   -o],
+      [  o,   -o],
+      [  o,    0],
+      [  o,    o],
+      [  0,    o],
+      [ -o,    o],
+      [ -o,    0],
+    ].map(([dx, dy]) => `${dx}px ${dy}px 0 ${style.outlineColor}`).join(', ');
   }
 
   if (style.hasBackground) {
@@ -195,11 +207,15 @@ export function buildPreviewCSS(style: CaptionStyle, videoHeight: number): CSSPr
     const g = parseInt(style.backgroundColor.slice(3, 5), 16);
     const b = parseInt(style.backgroundColor.slice(5, 7), 16);
     css.backgroundColor = `rgba(${r}, ${g}, ${b}, ${style.backgroundOpacity})`;
-    css.padding = `${0.2 * fontPx}px ${0.5 * fontPx}px`;
-    css.borderRadius = `${0.2 * fontPx}px`;
+    css.padding = `${0.25 * fontPx}px ${0.6 * fontPx}px`;
+    css.borderRadius = `${0.25 * fontPx}px`;
+    // Ensures the background wraps each line individually instead of stretching
+    // as one giant rectangle when the caption text wraps to multiple lines.
+    css.boxDecorationBreak = 'clone';
+    css.WebkitBoxDecorationBreak = 'clone';
   }
 
-  return css;
+  return css as CSSProperties;
 }
 
 // Outer wrapper positioning for the preview overlay.
@@ -218,6 +234,32 @@ export function buildOverlayCSS(style: CaptionStyle, _videoHeight: number): CSSP
       style.alignment === 'right' ? 'flex-end' : 'center',
     textAlign: style.alignment,
   };
+}
+
+// ─── Per-word ASS tag builder ─────────────────────────────────────────────────
+
+function hasWordStyle(ws?: WordStyle): boolean {
+  return !!(ws && (ws.color || ws.bold !== undefined || ws.italic !== undefined || ws.scale !== undefined || ws.fontFamily));
+}
+
+// Builds an ASS text string with inline override tags for styled words.
+// Resets after each styled word with {\r} so base style is restored.
+// Used for 'none' and 'fade' animations where all text is one dialogue line.
+function wordSpansToASS(spans: WordSpan[], letterCase: LetterCase): string {
+  return spans.map((w) => {
+    const txt = escapeASS(applyLetterCase(w.text, letterCase));
+    if (!hasWordStyle(w.style)) return txt;
+    const tags: string[] = [];
+    if (w.style!.color)                  tags.push(`\\1c${hexToASS(w.style!.color)}`);
+    if (w.style!.bold     !== undefined)  tags.push(`\\b${w.style!.bold ? 1 : 0}`);
+    if (w.style!.italic   !== undefined)  tags.push(`\\i${w.style!.italic ? 1 : 0}`);
+    if (w.style!.scale    !== undefined) {
+      const pct = Math.round(w.style!.scale * 100);
+      tags.push(`\\fscx${pct}\\fscy${pct}`);
+    }
+    if (w.style!.fontFamily) tags.push(`\\fn${w.style!.fontFamily}`);
+    return `{${tags.join('')}}${txt}{\\r}`;
+  }).join(' ');
 }
 
 // ─── ASS file generation for animated burn modes ──────────────────────────────
@@ -290,21 +332,39 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
   const lines: string[] = [header];
 
   for (const seg of segments) {
-    const rawText = escapeASS(seg.text); // text is pre-cased by the caller
-    const words = rawText.split(/\s+/).filter(Boolean);
-    const dur = Math.max(0.1, seg.end - seg.start);
+    // Check if this segment has per-word styles aligned to its words
+    const segWords  = seg.text.split(/\s+/).filter(Boolean);
+    const spans: WordSpan[] | null =
+      seg.words && seg.words.length === segWords.length ? seg.words : null;
+    const hasPerWordStyles = spans?.some((w) => hasWordStyle(w.style)) ?? false;
+
+    // Plain escaped text (used for word-level animation modes)
+    const rawText = escapeASS(applyLetterCase(seg.text, style.letterCase));
+    // Per-word styled text (used for static / fade modes)
+    const styledText = hasPerWordStyles && spans
+      ? wordSpansToASS(spans, style.letterCase)
+      : rawText;
+
+    const words   = rawText.split(/\s+/).filter(Boolean);
+    const dur     = Math.max(0.1, seg.end - seg.start);
     const wordDur = dur / Math.max(1, words.length);
 
     switch (style.animation) {
       case 'fade':
-        lines.push(dialogue(seg.start, seg.end, `{${posTag}\\fad(200,200)}${rawText}`));
+        lines.push(dialogue(seg.start, seg.end, `{${posTag}\\fad(200,200)}${styledText}`));
         break;
 
       case 'word-pop':
         words.forEach((w, i) => {
+          const spanStyle = spans?.[i]?.style;
+          const extraTags = spanStyle
+            ? (spanStyle.color ? `\\1c${hexToASS(spanStyle.color)}` : '') +
+              (spanStyle.bold !== undefined ? `\\b${spanStyle.bold ? 1 : 0}` : '') +
+              (spanStyle.italic !== undefined ? `\\i${spanStyle.italic ? 1 : 0}` : '')
+            : '';
           const t0 = seg.start + i * wordDur;
           const t1 = i < words.length - 1 ? t0 + wordDur : seg.end;
-          lines.push(dialogue(t0, t1, `{${posTag}\\fscx130\\fscy130\\t(0,150,\\fscx100\\fscy100)}${w}`));
+          lines.push(dialogue(t0, t1, `{${posTag}${extraTags}\\fscx130\\fscy130\\t(0,150,\\fscx100\\fscy100)}${w}`));
         });
         break;
 
@@ -313,9 +373,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
         words.forEach((w, i) => {
           const t0 = seg.start + i * wordDur;
           const t1 = i < words.length - 1 ? t0 + wordDur : seg.end;
-          const parts = words.map((word, j) =>
-            j === i ? `{\\1c${hlColor}}${word}{\\r}` : word
-          );
+          const parts = words.map((word, j) => {
+            if (j === i) return `{\\1c${hlColor}}${word}{\\r}`;
+            const ws = spans?.[j]?.style;
+            if (!ws || !hasWordStyle(ws)) return word;
+            const tags = (ws.color ? `\\1c${hexToASS(ws.color)}` : '') +
+                         (ws.bold !== undefined ? `\\b${ws.bold ? 1 : 0}` : '') +
+                         (ws.italic !== undefined ? `\\i${ws.italic ? 1 : 0}` : '');
+            return tags ? `{${tags}}${word}{\\r}` : word;
+          });
           lines.push(dialogue(t0, t1, `{${posTag}}` + parts.join(' ')));
         });
         break;
@@ -323,9 +389,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
 
       case 'impact':
         words.forEach((w, i) => {
+          const spanStyle = spans?.[i]?.style;
+          const extraTags = spanStyle
+            ? (spanStyle.color ? `\\1c${hexToASS(spanStyle.color)}` : '') +
+              (spanStyle.bold !== undefined ? `\\b${spanStyle.bold ? 1 : 0}` : '')
+            : '';
           const t0 = seg.start + i * wordDur;
           const t1 = i < words.length - 1 ? t0 + wordDur : seg.end;
-          lines.push(dialogue(t0, t1, `{${posTag}\\fscx200\\fscy200\\t(0,120,\\fscx95\\fscy95)\\t(120,200,\\fscx100\\fscy100)}${w}`));
+          lines.push(dialogue(t0, t1, `{${posTag}${extraTags}\\fscx200\\fscy200\\t(0,120,\\fscx95\\fscy95)\\t(120,200,\\fscx100\\fscy100)}${w}`));
         });
         break;
 
@@ -334,18 +405,22 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
         words.forEach((w, i) => {
           const t0 = seg.start + i * wordDur;
           const t1 = i < words.length - 1 ? t0 + wordDur : seg.end;
-          const parts = words.map((word, j) =>
-            j === i
-              ? `{\\1c${hlColor}\\fscx120\\fscy120\\b1}${word}{\\r}`
-              : word
-          );
+          const parts = words.map((word, j) => {
+            if (j === i) return `{\\1c${hlColor}\\fscx120\\fscy120\\b1}${word}{\\r}`;
+            const ws = spans?.[j]?.style;
+            if (!ws || !hasWordStyle(ws)) return word;
+            const tags = (ws.color ? `\\1c${hexToASS(ws.color)}` : '') +
+                         (ws.bold !== undefined ? `\\b${ws.bold ? 1 : 0}` : '') +
+                         (ws.italic !== undefined ? `\\i${ws.italic ? 1 : 0}` : '');
+            return tags ? `{${tags}}${word}{\\r}` : word;
+          });
           lines.push(dialogue(t0, t1, `{${posTag}}` + parts.join(' ')));
         });
         break;
       }
 
       default:
-        lines.push(dialogue(seg.start, seg.end, `{${posTag}}${rawText}`));
+        lines.push(dialogue(seg.start, seg.end, `{${posTag}}${styledText}`));
     }
   }
 

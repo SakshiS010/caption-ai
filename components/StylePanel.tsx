@@ -11,22 +11,99 @@ import {
   ANIMATIONS,
 } from '@/lib/captionStyle';
 import { STYLE_PRESETS } from '@/lib/captionPresets';
+import type { CaptionSegment, WordSpan, WordStyle } from '@/lib/types';
 
 interface Props {
   style: CaptionStyle;
   onChange: (style: CaptionStyle) => void;
+  selectedSegment?: CaptionSegment;
+  onSegmentChange?: (seg: CaptionSegment) => void;
 }
 
 const ANIM_ICON: Record<string, string> = {
   none: '—', fade: '✦', 'word-pop': '★', karaoke: '🎤', impact: '⚡',
 };
 
-export function StylePanel({ style, onChange }: Props) {
+/* ── Word emphasis helpers ─────────────────────────────────────── */
+const WORD_COLORS = [
+  '#FFFFFF', '#FFEB3B', '#f472b6', '#60a5fa',
+  '#34d399', '#f97316', '#a78bfa', '#f87171',
+];
+const SCALES = [
+  { label: '0.8×', v: 0.8 as number | undefined },
+  { label: '1×',   v: undefined },
+  { label: '1.2×', v: 1.2 as number | undefined },
+  { label: '1.5×', v: 1.5 as number | undefined },
+  { label: '2×',   v: 2.0 as number | undefined },
+];
+
+function hasWordStyle(ws?: WordStyle): boolean {
+  return !!(ws && (ws.color || ws.bold !== undefined || ws.italic !== undefined || ws.scale !== undefined || ws.fontFamily));
+}
+function hexToRgba(hex: string, a: number) {
+  const h = hex.replace('#', '');
+  return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`;
+}
+function getWordSpans(seg: CaptionSegment): WordSpan[] {
+  const tokens = seg.text.split(/\s+/).filter(Boolean);
+  if (seg.words && seg.words.length === tokens.length) return seg.words;
+  return tokens.map((t, i) => ({ text: t, style: seg.words?.[i]?.text === t ? seg.words![i].style : undefined }));
+}
+
+export function StylePanel({ style, onChange, selectedSegment, onSegmentChange }: Props) {
   const [open, setOpen] = useState(true);
   const [presetsOpen, setPresetsOpen] = useState(true);
   const [search, setSearch] = useState('');
+  const [isEmphasizing, setIsEmphasizing] = useState(false);
+  const [selectedIdxs, setSelectedIdxs] = useState<Set<number>>(new Set());
   const set = <K extends keyof CaptionStyle>(key: K, value: CaptionStyle[K]) =>
     onChange({ ...style, [key]: value });
+
+  /* ── Emphasis actions ── */
+  const enterEmphasis = () => {
+    if (!selectedSegment || !onSegmentChange) return;
+    const spans = getWordSpans(selectedSegment);
+    onSegmentChange({ ...selectedSegment, words: spans });
+    setIsEmphasizing(true);
+    setSelectedIdxs(new Set());
+  };
+  const exitEmphasis = () => { setIsEmphasizing(false); setSelectedIdxs(new Set()); };
+  const toggleWord = (i: number) =>
+    setSelectedIdxs((prev) => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
+
+  const applyWordStyle = (delta: Partial<WordStyle>) => {
+    if (!selectedSegment?.words || !onSegmentChange) return;
+    const newWords = selectedSegment.words.map((w, i) => {
+      if (!selectedIdxs.has(i)) return w;
+      const merged: WordStyle = { ...w.style, ...delta };
+      if (delta.scale === undefined && 'scale' in delta) delete merged.scale;
+      return { ...w, style: Object.keys(merged).length ? merged : undefined };
+    });
+    onSegmentChange({ ...selectedSegment, words: newWords });
+  };
+  const clearSelected = () => {
+    if (!selectedSegment?.words || !onSegmentChange) return;
+    onSegmentChange({
+      ...selectedSegment,
+      words: selectedSegment.words.map((w, i) => selectedIdxs.has(i) ? { text: w.text } : w),
+    });
+  };
+  const clearAllWordStyles = () => {
+    if (!selectedSegment?.words || !onSegmentChange) return;
+    onSegmentChange({ ...selectedSegment, words: selectedSegment.words.map((w) => ({ text: w.text })) });
+  };
+
+  /* Aggregate current style of selected words for toolbar state */
+  const aggWordStyle: WordStyle = {};
+  if (isEmphasizing && selectedSegment?.words && selectedIdxs.size > 0) {
+    const sel = selectedSegment.words.filter((_, i) => selectedIdxs.has(i)).map((w) => w.style ?? {});
+    if (sel.every((s) => s.bold))   aggWordStyle.bold   = true;
+    if (sel.every((s) => s.italic)) aggWordStyle.italic = true;
+    const firstColor = sel[0]?.color;
+    if (firstColor && sel.every((s) => s.color === firstColor)) aggWordStyle.color = firstColor;
+    const firstScale = sel[0]?.scale;
+    if (firstScale !== undefined && sel.every((s) => s.scale === firstScale)) aggWordStyle.scale = firstScale;
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -182,6 +259,147 @@ export function StylePanel({ style, onChange }: Props) {
             <Field label="Text colour">
               <ColorRow value={style.textColor} onChange={(v) => set('textColor', v)} />
             </Field>
+
+            {/* ── Word Emphasis ──────────────────────────────────── */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12 }}>
+              {!selectedSegment || !onSegmentChange ? (
+                /* No segment selected */
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    disabled
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#4b5563',
+                      borderRadius: 7,
+                      padding: '5px 12px',
+                      fontSize: 12,
+                      cursor: 'not-allowed',
+                      display: 'flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    ✦ Emphasize words
+                  </button>
+                  <span style={{ fontSize: 10, color: '#4b5563' }}>Select a caption first</span>
+                </div>
+              ) : !isEmphasizing ? (
+                /* Idle — show open button */
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    onClick={enterEmphasis}
+                    style={{
+                      background: selectedSegment.words?.some((w) => hasWordStyle(w.style))
+                        ? 'rgba(244,114,182,0.18)' : 'rgba(255,255,255,0.06)',
+                      border: selectedSegment.words?.some((w) => hasWordStyle(w.style))
+                        ? '1px solid rgba(244,114,182,0.55)' : '1px solid rgba(255,255,255,0.14)',
+                      color: selectedSegment.words?.some((w) => hasWordStyle(w.style))
+                        ? '#f9a8d4' : '#95d5b2',
+                      borderRadius: 7,
+                      padding: '5px 12px',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      fontWeight: 500,
+                    }}
+                  >
+                    ✦ {selectedSegment.words?.some((w) => hasWordStyle(w.style)) ? 'Edit emphasis' : 'Emphasize words'}
+                  </button>
+                  {selectedSegment.words?.some((w) => hasWordStyle(w.style)) && (
+                    <button
+                      onClick={clearAllWordStyles}
+                      style={{ background: 'none', border: 'none', color: '#52b788', fontSize: 10, cursor: 'pointer', opacity: 0.65 }}
+                    >
+                      clear all
+                    </button>
+                  )}
+                </div>
+              ) : (
+                /* Active emphasis editor */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 11, color: '#f9a8d4', fontWeight: 600 }}>✦ Emphasize words</span>
+                    <button
+                      onClick={exitEmphasis}
+                      style={{ background: 'rgba(52,183,136,0.15)', border: '1px solid rgba(52,183,136,0.4)', color: '#52b788', borderRadius: 5, padding: '2px 10px', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      ✓ Done
+                    </button>
+                  </div>
+                  <p style={{ fontSize: 10, color: '#52b788', opacity: 0.6, margin: 0 }}>Click words to select, then apply styles below</p>
+
+                  {/* Word chips */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {getWordSpans(selectedSegment).map((w, i) => {
+                      const isSel  = selectedIdxs.has(i);
+                      const styled = hasWordStyle(w.style);
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => toggleWord(i)}
+                          style={{
+                            background: isSel
+                              ? 'rgba(244,114,182,0.22)'
+                              : styled && w.style!.color
+                              ? hexToRgba(w.style!.color, 0.13)
+                              : 'rgba(255,255,255,0.05)',
+                            border: isSel
+                              ? '2px solid #f472b6'
+                              : styled && w.style!.color
+                              ? `1.5px solid ${w.style!.color}`
+                              : '1px solid rgba(255,255,255,0.12)',
+                            color: isSel ? '#fff' : (w.style?.color ?? '#95d5b2'),
+                            fontWeight: w.style?.bold ? 700 : 400,
+                            fontStyle: w.style?.italic ? 'italic' : 'normal',
+                            fontSize: w.style?.scale ? Math.round(11 * w.style.scale) : 11,
+                            borderRadius: 5,
+                            padding: '3px 8px',
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                            lineHeight: 1.3,
+                            transition: 'all 0.1s',
+                          }}
+                        >
+                          {w.text}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Toolbar (visible when words selected) */}
+                  {selectedIdxs.size > 0 && (
+                    <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(244,114,182,0.3)', borderRadius: 8, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#f9a8d4', fontSize: 10 }}>{selectedIdxs.size} word{selectedIdxs.size > 1 ? 's' : ''} selected</span>
+                        <button onClick={clearSelected} style={{ background: 'none', border: 'none', color: '#52b788', fontSize: 10, cursor: 'pointer', opacity: 0.7 }}>✕ Clear style</button>
+                      </div>
+                      {/* Colors */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                        <span style={{ color: '#74c69d', fontSize: 10, opacity: 0.7, minWidth: 32 }}>Color</span>
+                        {WORD_COLORS.map((c) => (
+                          <button key={c} onClick={() => applyWordStyle({ color: c })} title={c} style={{ width: 17, height: 17, borderRadius: '50%', background: c, border: aggWordStyle.color === c ? '2px solid #f472b6' : '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', flexShrink: 0 }} />
+                        ))}
+                        <input type="color" value={aggWordStyle.color ?? '#FFFFFF'} onChange={(e) => applyWordStyle({ color: e.target.value.toUpperCase() })} style={{ width: 20, height: 20, borderRadius: 3, cursor: 'pointer', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }} title="Custom colour" />
+                      </div>
+                      {/* B / I / Scale */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                        <span style={{ color: '#74c69d', fontSize: 10, opacity: 0.7, minWidth: 32 }}>Style</span>
+                        <EmphBtn active={!!aggWordStyle.bold}   onClick={() => applyWordStyle({ bold:   !aggWordStyle.bold })}><b>B</b></EmphBtn>
+                        <EmphBtn active={!!aggWordStyle.italic} onClick={() => applyWordStyle({ italic: !aggWordStyle.italic })}><i>I</i></EmphBtn>
+                        <span style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.15)', margin: '0 2px' }} />
+                        <span style={{ color: '#74c69d', fontSize: 10, opacity: 0.7 }}>Size</span>
+                        {SCALES.map(({ label, v }) => (
+                          <EmphBtn key={label} active={aggWordStyle.scale === v} small onClick={() => applyWordStyle({ scale: v })}>{label}</EmphBtn>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={clearAllWordStyles} style={{ alignSelf: 'flex-start', background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#6b7280', borderRadius: 5, padding: '2px 9px', fontSize: 10, cursor: 'pointer' }}>
+                    Clear all styles
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Outline */}
             <div className="grid grid-cols-2 gap-3">
@@ -386,6 +604,26 @@ function ButtonGroup<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+function EmphBtn({ active, onClick, children, small }: { active: boolean; onClick: () => void; children: React.ReactNode; small?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: active ? 'rgba(244,114,182,0.28)' : 'rgba(255,255,255,0.06)',
+        border: active ? '1px solid rgba(244,114,182,0.65)' : '1px solid rgba(255,255,255,0.12)',
+        color: active ? '#f9a8d4' : '#95d5b2',
+        borderRadius: 5,
+        padding: small ? '1px 6px' : '2px 7px',
+        fontSize: small ? 10 : 12,
+        cursor: 'pointer',
+        fontWeight: active ? 600 : 400,
+      }}
+    >
+      {children}
+    </button>
   );
 }
 

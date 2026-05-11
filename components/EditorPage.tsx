@@ -7,6 +7,7 @@ import { Timeline } from './Timeline';
 import { StylePanel } from './StylePanel';
 import { CaptionEditor } from './CaptionEditor';
 import { ExportPanel } from './ExportPanel';
+import { EmphasisTab } from './EmphasisTab';
 import type { CaptionSegment, AppState, ProgressInfo } from '@/lib/types';
 import type { CaptionStyle } from '@/lib/captionStyle';
 
@@ -27,12 +28,13 @@ interface Props {
   onHome: () => void;
 }
 
-type Tab = 'captions' | 'style' | 'export';
+type Tab = 'captions' | 'style' | 'emphasis' | 'export';
 
 const TABS: { id: Tab; label: string; emoji: string }[] = [
-  { id: 'captions', label: 'Captions', emoji: '🗒️' },
-  { id: 'style',    label: 'Style',    emoji: '🎨' },
-  { id: 'export',   label: 'Export',   emoji: '📦' },
+  { id: 'captions',  label: 'Captions',  emoji: '🗒️' },
+  { id: 'style',     label: 'Style',     emoji: '🎨' },
+  { id: 'emphasis',  label: 'Emphasis',  emoji: '✦'  },
+  { id: 'export',    label: 'Export',    emoji: '📦' },
 ];
 
 export function EditorPage({
@@ -235,7 +237,22 @@ export function EditorPage({
               )}
 
               {activeTab === 'style' && (
-                <StylePanel style={captionStyle} onChange={setCaptionStyle} />
+                <StylePanel
+                  style={captionStyle}
+                  onChange={setCaptionStyle}
+                  selectedSegment={segments.find((s) => s.id === selectedSegmentId)}
+                  onSegmentChange={(updated) =>
+                    setSegments((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+                  }
+                />
+              )}
+
+              {activeTab === 'emphasis' && (
+                <EmphasisTab
+                  segments={segments}
+                  onSegmentsChange={setSegments}
+                  currentTime={currentTime}
+                />
               )}
 
               {activeTab === 'export' && (
