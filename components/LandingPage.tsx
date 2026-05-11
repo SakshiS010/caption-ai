@@ -113,14 +113,19 @@ export function LandingPage({ onUpload }: Props) {
         )}
       </nav>
 
-      <main className="relative pt-24 pb-20 px-5 min-h-screen flex items-center justify-center">
-        {phase === 'intake' && <Intake info={info} setInfo={setInfo} onSubmit={submitIntake} />}
-        {phase === 'tour'   && <Tour step={step} idx={tourIdx} total={tourSteps.length} onNext={nextTour} onSkip={() => setPhase('upload')} />}
+      <main className="relative pt-24 pb-20 px-5 min-h-screen">
+        {phase === 'intake' && (
+          <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center">
+            <Intake info={info} setInfo={setInfo} onSubmit={submitIntake} />
+          </div>
+        )}
+        {phase === 'tour' && (
+          <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center">
+            <Tour step={step} idx={tourIdx} total={tourSteps.length} onNext={nextTour} onSkip={() => setPhase('upload')} />
+          </div>
+        )}
         {phase === 'upload' && <UploadStage info={info} onUpload={onUpload} />}
       </main>
-
-      {/* ── Features strip — appears on the upload phase ─────────── */}
-      {phase === 'upload' && <FeaturesStrip />}
 
       {/* ── FOOTER ──────────────────────────────────────────────── */}
       <footer
@@ -433,7 +438,7 @@ function Tour({
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   PHASE 3 — Upload
+   PHASE 3 — Upload  (rich 2-col hero + app tour)
    ────────────────────────────────────────────────────────────────── */
 function UploadStage({ info, onUpload }: { info: UserInfo; onUpload: (f: File) => void }) {
   const onDrop = useCallback((accepted: File[]) => { if (accepted[0]) onUpload(accepted[0]); }, [onUpload]);
@@ -445,81 +450,315 @@ function UploadStage({ info, onUpload }: { info: UserInfo; onUpload: (f: File) =
   });
 
   return (
-    <div className="max-w-3xl w-full mx-auto text-center page-fade">
-      <div className="flex justify-center mb-6">
-        <div className="relative">
-          <OllyMascot size={150} pose={isDragActive ? 'love' : 'happy'} className={isDragActive ? 'olly-glow-pink' : 'olly-glow-green'} />
-          <span
-            className="absolute -top-2 -right-2 inline-block bubble-pop-r px-3 py-1 rounded-full font-display text-xs font-bold"
-            style={{
-              background: '#fce7f3',
-              border: '2px solid #be185d',
-              color: '#be185d',
-              animationDelay: '200ms',
-            }}
-          >
-            ready! ✨
-          </span>
+    <div className="w-full max-w-6xl mx-auto page-fade">
+
+      {/* ── HERO ROW ─────────────────────────────────────────────── */}
+      <div className="grid lg:grid-cols-[360px_1fr] gap-8 xl:gap-14 items-start py-6">
+
+        {/* LEFT — Olly + description */}
+        <div className="flex flex-col items-center lg:items-start gap-5">
+
+          {/* Animated mascot */}
+          <div className="relative flex justify-center lg:justify-start w-full">
+            <OllyMascot
+              size={190}
+              pose={isDragActive ? 'love' : 'happy'}
+              className={isDragActive ? 'olly-glow-pink' : 'olly-glow-green'}
+            />
+            <span
+              className="absolute top-2 right-4 lg:right-auto lg:left-[200px] bubble-pop-r px-3 py-1 rounded-full font-display text-xs font-bold"
+              style={{ background: '#fce7f3', border: '2px solid #be185d', color: '#be185d', animationDelay: '200ms' }}
+            >
+              ready! ✨
+            </span>
+          </div>
+
+          {/* About Olly-AI description card */}
+          <AboutOlly />
+        </div>
+
+        {/* RIGHT — Upload zone */}
+        <div>
+          <div className="mb-5">
+            <h1 className="font-display text-4xl md:text-5xl font-bold mb-2 leading-tight" style={{ color: '#1b4332' }}>
+              Drop your video,{' '}
+              <span style={{ color: '#ec4899' }}>{info.name || 'friend'}</span>
+            </h1>
+            <p className="text-base md:text-lg" style={{ color: '#52b788' }}>
+              Olly listens, writes every word, and burns it in. 💚
+            </p>
+          </div>
+
+          <div {...getRootProps()} className="cursor-pointer select-none">
+            <input {...getInputProps()} />
+            <div
+              className="relative rounded-3xl p-10 md:p-12 transition-all duration-300"
+              style={{
+                border: `3px dashed ${isDragActive ? '#40916c' : '#95d5b2'}`,
+                background: isDragActive
+                  ? 'rgba(208,243,220,0.45)'
+                  : 'linear-gradient(145deg, rgba(255,251,240,0.95), rgba(240,250,244,0.85))',
+                transform: isDragActive ? 'scale(1.025)' : 'scale(1)',
+                boxShadow: isDragActive ? '0 0 0 6px rgba(64,145,108,.15)' : '0 4px 30px rgba(45,106,79,.08)',
+              }}
+            >
+              {[
+                { top: 10, left: 10,      rot: 0,   color: '#40916c' },
+                { top: 10, right: 10,     rot: 90,  color: '#f472b6' },
+                { bottom: 10, right: 10,  rot: 180, color: '#40916c' },
+                { bottom: 10, left: 10,   rot: 270, color: '#f472b6' },
+              ].map(({ color, rot, ...pos }, i) => (
+                <span key={i} className="absolute" style={{ ...pos, width: 24, height: 24, borderLeft: `3px solid ${color}`, borderTop: `3px solid ${color}`, borderRadius: '6px 0 0 0', transform: `rotate(${rot}deg)` } as React.CSSProperties} />
+              ))}
+
+              <div className="text-5xl mb-3 arrow-bob inline-block">⬇️</div>
+              <h3 className="font-display text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1b4332' }}>
+                {isDragActive ? 'Yes! Drop it right here!' : 'Drop your video here'}
+              </h3>
+              <p className="text-sm mb-6" style={{ color: '#52b788' }}>
+                or click to browse · MP4 · MOV · AVI · WebM · MKV
+              </p>
+              <button
+                type="button"
+                onClick={open}
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-display font-bold text-white text-lg transition-all hover:-translate-y-1 active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #ec4899, #f472b6)', boxShadow: '0 6px 22px rgba(236,72,153,.35)' }}
+              >
+                ✨ Choose video
+              </button>
+              <p className="text-xs mt-5" style={{ color: '#95d5b2' }}>
+                Nothing uploaded to any server · 100% private · no account needed
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <h1 className="font-display text-4xl md:text-5xl font-bold mb-2 leading-tight" style={{ color: '#1b4332' }}>
-        Drop your video, <span style={{ color: '#ec4899' }}>{info.name || 'friend'}</span>
-      </h1>
-      <p className="text-base md:text-lg mb-8" style={{ color: '#52b788' }}>
-        I&apos;ll do the rest 💚
+      {/* ── APP WINDOWS TOUR ─────────────────────────────────────── */}
+      <AppWindowsNav />
+
+      {/* ── FEATURE STRIP ────────────────────────────────────────── */}
+      <FeaturesStrip />
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   About Olly-AI — description card shown next to mascot
+   ────────────────────────────────────────────────────────────────── */
+function AboutOlly() {
+  const bullets = [
+    { icon: '🎙️', label: 'Whisper AI',    desc: 'Transcribes every word in-browser' },
+    { icon: '🎨', label: '18 Fonts',       desc: 'Pick & style with colors + effects' },
+    { icon: '✦',  label: 'Word Emphasis',  desc: 'Highlight individual words in captions' },
+    { icon: '🔥', label: 'Burn to MP4',    desc: 'Captions locked into your video file' },
+  ];
+  return (
+    <div
+      className="sticker-card w-full p-6 relative overflow-hidden"
+      style={{ transform: 'rotate(-1deg)' }}
+    >
+      {/* gradient top bar */}
+      <div className="absolute inset-x-0 top-0 h-[5px] rounded-t-[18px]" style={{ background: 'linear-gradient(90deg, #40916c 0%, #f472b6 50%, #40916c 100%)' }} />
+
+      {/* badge */}
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3 font-display text-[10px] font-bold uppercase tracking-widest"
+        style={{ background: '#d8f3dc', color: '#1b4332' }}>
+        🥑 AI · Browser-Native · Private
+      </div>
+
+      {/* heading */}
+      <h2 className="font-display text-xl font-bold leading-snug mb-2" style={{ color: '#1b4332' }}>
+        Captions burned into your video —{' '}
+        <span style={{ color: '#ec4899' }}>no servers, ever.</span>
+      </h2>
+
+      {/* description */}
+      <p className="text-sm leading-relaxed mb-4" style={{ color: '#52b788' }}>
+        Olly runs OpenAI&apos;s Whisper entirely inside your browser. It transcribes your video,
+        then lets you style every caption with fonts, animations and word-level emphasis —
+        before burning them permanently into a downloadable MP4.
       </p>
 
-      <div {...getRootProps()} className="cursor-pointer select-none">
-        <input {...getInputProps()} />
-        <div
-          className="relative rounded-3xl p-10 md:p-12 transition-all duration-300"
-          style={{
-            border: `3px dashed ${isDragActive ? '#40916c' : '#95d5b2'}`,
-            background: isDragActive
-              ? 'rgba(208,243,220,0.45)'
-              : 'linear-gradient(145deg, rgba(255,251,240,0.95), rgba(240,250,244,0.85))',
-            transform: isDragActive ? 'scale(1.025)' : 'scale(1)',
-            boxShadow: isDragActive ? '0 0 0 6px rgba(64,145,108,.15)' : '0 4px 30px rgba(45,106,79,.08)',
-          }}
-        >
-          {/* Corner crops — alternating olive/pink */}
-          {[
-            { top: 10, left: 10,   rot: 0,   color: '#40916c' },
-            { top: 10, right: 10,  rot: 90,  color: '#f472b6' },
-            { bottom: 10, right: 10, rot: 180, color: '#40916c' },
-            { bottom: 10, left: 10,  rot: 270, color: '#f472b6' },
-          ].map(({ color, rot, ...pos }, i) => (
+      {/* bullets */}
+      <div className="flex flex-col gap-2.5 mb-4">
+        {bullets.map((b) => (
+          <div key={b.label} className="flex items-start gap-3">
             <span
-              key={i}
-              className="absolute"
-              style={{ ...pos, width: 24, height: 24, borderLeft: `3px solid ${color}`, borderTop: `3px solid ${color}`, borderRadius: '6px 0 0 0', transform: `rotate(${rot}deg)` } as React.CSSProperties}
-            />
-          ))}
+              className="mt-0.5 flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold"
+              style={{ background: 'linear-gradient(135deg, #40916c, #52b788)', color: '#fff' }}
+            >
+              {b.icon}
+            </span>
+            <div>
+              <span className="font-display font-bold text-sm" style={{ color: '#1b4332' }}>{b.label}</span>
+              <span className="text-xs ml-1.5" style={{ color: '#74c69d' }}>{b.desc}</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
-          <div className="text-5xl mb-3 arrow-bob inline-block">⬇️</div>
-          <h3 className="font-display text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1b4332' }}>
-            {isDragActive ? 'Yes! Drop it!' : 'Drop your video here'}
-          </h3>
-          <p className="text-sm mb-6" style={{ color: '#52b788' }}>
-            or click to browse · MP4 · MOV · AVI · WebM · MKV
-          </p>
-
-          <button
-            type="button"
-            onClick={open}
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-display font-bold text-white text-lg transition-all hover:-translate-y-1 active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #ec4899, #f472b6)', boxShadow: '0 6px 22px rgba(236,72,153,.35)' }}
-          >
-            ✨ Choose video
-          </button>
-
-          <p className="text-xs mt-5" style={{ color: '#95d5b2' }}>
-            Nothing uploaded to any server · 100% private · no account needed
-          </p>
-        </div>
+      {/* privacy badge */}
+      <div
+        className="flex items-center gap-2 px-3 py-2 rounded-xl font-display text-xs font-semibold"
+        style={{ background: '#f0faf4', border: '1.5px solid #95d5b2', color: '#2d6a4f' }}
+      >
+        <span>🔒</span>
+        <span>100% on your device · no sign-up · completely private</span>
       </div>
     </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   App Windows Navigator — visual tour of all 3 pages
+   ────────────────────────────────────────────────────────────────── */
+function AppWindowsNav() {
+  const windows = [
+    {
+      step: '01',
+      label: 'Upload',
+      tagline: 'Start here',
+      accent: '#40916c',
+      lightBg: '#f0faf4',
+      borderC: '#95d5b2',
+      preview: (
+        <div className="flex flex-col items-center justify-center h-full gap-2 py-2">
+          <div className="text-3xl">🎬</div>
+          <div className="rounded-xl border-2 border-dashed px-4 py-2 font-display text-xs font-semibold text-center"
+            style={{ borderColor: '#95d5b2', color: '#40916c', background: 'rgba(208,243,220,0.3)' }}>
+            ⬇ Drop video
+          </div>
+          <div className="flex gap-1 mt-1">
+            {['MP4','MOV','AVI'].map(f => (
+              <span key={f} className="px-1.5 py-0.5 rounded font-display text-[9px] font-bold" style={{ background: '#d8f3dc', color: '#1b4332' }}>{f}</span>
+            ))}
+          </div>
+        </div>
+      ),
+      desc: 'Drop any video file. Olly accepts MP4, MOV, AVI, WebM & MKV.',
+    },
+    {
+      step: '02',
+      label: 'Edit & Style',
+      tagline: 'The magic happens',
+      accent: '#ec4899',
+      lightBg: '#fdf2f8',
+      borderC: '#f9a8d4',
+      preview: (
+        <div className="flex flex-col gap-1.5 py-2 w-full px-1">
+          {/* mock tab bar */}
+          <div className="flex gap-1 mb-1">
+            {['Captions','Style','Emphasis','Export'].map((t, i) => (
+              <span key={t} className="px-1.5 py-0.5 rounded font-display text-[8px] font-bold"
+                style={{ background: i === 1 ? '#ec4899' : '#fce7f3', color: i === 1 ? '#fff' : '#be185d' }}>
+                {t}
+              </span>
+            ))}
+          </div>
+          {/* mock caption line */}
+          <div className="rounded-lg px-2 py-1.5 font-display text-xs font-bold text-center"
+            style={{ background: '#ec4899', color: '#fff', fontSize: 11 }}>
+            &ldquo;Hello world!&rdquo;
+          </div>
+          {/* mock color row */}
+          <div className="flex gap-1 justify-center mt-1">
+            {['#1b4332','#ec4899','#fde68a','#a78bfa','#fff'].map(c => (
+              <span key={c} className="w-4 h-4 rounded-full border border-white/40" style={{ background: c }} />
+            ))}
+          </div>
+          {/* mock font label */}
+          <p className="text-center font-display text-[9px]" style={{ color: '#be185d' }}>Bebas · Fade · 48px</p>
+        </div>
+      ),
+      desc: 'Transcribe, pick fonts, animate and emphasize any word.',
+    },
+    {
+      step: '03',
+      label: 'Export',
+      tagline: 'Download & share',
+      accent: '#1b4332',
+      lightBg: '#f0faf4',
+      borderC: '#d8f3dc',
+      preview: (
+        <div className="flex flex-col items-center justify-center h-full gap-3 py-2">
+          <div className="text-3xl">📦</div>
+          <div className="flex flex-col items-center gap-1 w-full px-3">
+            <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: '#d8f3dc' }}>
+              <div className="h-full rounded-full" style={{ width: '82%', background: 'linear-gradient(90deg, #40916c, #52b788)' }} />
+            </div>
+            <span className="font-display text-[9px] font-bold" style={{ color: '#40916c' }}>Burning captions… 82%</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-display text-xs font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #1b4332, #40916c)' }}>
+            ⬇ Download MP4
+          </div>
+        </div>
+      ),
+      desc: 'Captions burned permanently into the video. Download your MP4.',
+    },
+  ];
+
+  return (
+    <section className="py-14">
+      {/* heading */}
+      <div className="text-center mb-8">
+        <p className="font-display text-xs font-bold uppercase tracking-widest mb-1" style={{ color: '#40916c' }}>
+          ✦ three simple steps ✦
+        </p>
+        <h2 className="font-display text-3xl md:text-4xl font-bold" style={{ color: '#1b4332' }}>
+          How <span style={{ color: '#ec4899' }}>Olly</span> works
+        </h2>
+      </div>
+
+      {/* window cards row */}
+      <div className="grid md:grid-cols-3 gap-4 md:gap-0 items-center max-w-5xl mx-auto">
+        {windows.map((w, i) => (
+          <div key={w.step} className="flex items-center">
+            {/* window card */}
+            <div
+              className="flex-1 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2"
+              style={{
+                border: `2.5px solid ${w.borderC}`,
+                background: '#fff',
+                boxShadow: `6px 6px 0 0 ${w.accent}22, 0 4px 20px rgba(0,0,0,0.06)`,
+              }}
+            >
+              {/* title bar */}
+              <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: w.accent }}>
+                <div className="flex gap-1">
+                  {['rgba(255,255,255,0.5)','rgba(255,255,255,0.35)','rgba(255,255,255,0.2)'].map((o, j) => (
+                    <span key={j} className="w-2.5 h-2.5 rounded-full" style={{ background: o }} />
+                  ))}
+                </div>
+                <span className="font-display text-xs font-bold text-white/90 ml-1">
+                  {w.step} — {w.label}
+                </span>
+              </div>
+
+              {/* content preview */}
+              <div className="px-4 py-3 min-h-[110px] flex items-center justify-center" style={{ background: w.lightBg }}>
+                {w.preview}
+              </div>
+
+              {/* footer */}
+              <div className="px-4 py-3 border-t" style={{ borderColor: w.borderC }}>
+                <p className="font-display text-xs font-bold mb-0.5" style={{ color: w.accent }}>{w.tagline}</p>
+                <p className="text-xs leading-snug" style={{ color: '#52b788' }}>{w.desc}</p>
+              </div>
+            </div>
+
+            {/* arrow between cards */}
+            {i < windows.length - 1 && (
+              <div className="hidden md:flex flex-col items-center mx-2 flex-shrink-0">
+                <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, #40916c, #f472b6)' }} />
+                <div className="w-0 h-0" style={{ borderLeft: '6px solid #f472b6', borderTop: '4px solid transparent', borderBottom: '4px solid transparent', marginTop: -1 }} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
